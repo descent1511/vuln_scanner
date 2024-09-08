@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.sqlite3
+
+# If you're using PostgreSQL:
+*.pgsql
+
+# Ignore database migrations
+*/migrations/*
+
+# Ignore the Django secret key file
+.env
+*.env
+
+# macOS specific files
+.DS_Store
+
+# Virtual environment
+venv/
+env/
+ENV/
+*.venv
+*.env
+
+# If you're using pipenv
+Pipfile.lock
+
+# If you're using Docker:
+*.log
+*.pid
+*.seed
+*.pid.lock
+docker-compose.yml
+
+# If you're using Node.js:
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+*.py,cover
+.hypothesis/
+.coverage.*
+
+# Pytest
+.pytest_cache/
+
+# Static files
+staticfiles/
+
+# Local development settings
+local_settings.py
+
+# IDE specific files (for example, VSCode or PyCharm)
+.vscode/
+.idea/
+
+# JetBrains IDEs
+.idea/
+*.iml

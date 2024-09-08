@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Alert Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .field {
+            margin-bottom: 15px;
+        }
+        .field span {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+        }
+        .recommendation {
+            background-color: #ffdddd;
+            padding: 15px;
+            border: 1px solid #ff4c4c;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Security Alert Details</h2>
+        <div class="field">
+            <span>ID:</span> 1
+        </div>
+        <div class="field">
+            <span>Timestamp:</span> 2024-08-14T10:30:00Z
+        </div>
+        <div class="field">
+            <span>Alert Type:</span> Vulnerability Detected
+        </div>
+        <div class="field">
+            <span>Severity:</span> High
+        </div>
+        <div class="field">
+            <span>IP Address:</span> 203.0.113.50
+        </div>
+        <div class="field">
+            <span>Port:</span> 443
+        </div>
+        <div class="field">
+            <span>Service:</span> HTTPS
+        </div>
+        <div class="field">
+            <span>Vulnerability Name:</span> Heartbleed
+        </div>
+        <div class="field">
+            <span>Description:</span> Phát hiện lỗ hổng Heartbleed trên dịch vụ HTTPS. Lỗ hổng này cho phép kẻ tấn công đánh cắp thông tin từ bộ nhớ của máy chủ mà không cần xác thực.
+        </div>
+        <div class="field">
+            <span>CVSS Score:</span> 9.8
+        </div>
+        <div class="field">
+            <span>Reference:</span> <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-0160" target="_blank">CVE-2014-0160</a>
+        </div>
+        <div class="recommendation">
+            <span>Recommendation:</span> Cập nhật OpenSSL lên phiên bản mới nhất để khắc phục lỗ hổng.
+        </div>
+        <div class="field">
+            <span>Status:</span> Unresolved
+        </div>
+        <div class="field">
+            <span>Notification Sent:</span> Yes
+        </div>
+        <div class="field">
+            <span>Notification Sent At:</span> 2024-08-14T10:31:00Z
+        </div>
+        <div class="field">
+            <span>Notification Channel:</span> Telegram
+        </div>
+        <h3>Additional Information</h3>
+        <div class="field">
+            <span>Scan ID:</span> scan-2024-08-14-001
+        </div>
+        <div class="field">
+            <span>Scanner:</span> OpenVAS
+        </div>
+        <div class="field">
+            <span>Owner:</span> Viettel Cloud Security Team
+        </div>
+    </div>
+</body>
+</html>
