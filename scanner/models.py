@@ -95,6 +95,7 @@ class SecurityAlert(models.Model):
     severity_origin = models.CharField(max_length=255, null=True, blank=True)  
     description = models.TextField(null=True, blank=True) 
     solution = models.TextField(null=True, blank=True) 
+    references = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"Alert {self.id} - {self.name} - {self.ip_address}"
