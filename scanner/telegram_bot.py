@@ -1,7 +1,9 @@
 import os
 import telebot
 from .models import TelegramUser
-BOT_TOKEN = "6935465574:AAGwDPJPLzPtiA2ZHx-HjZe8WrqOrpcZsGc"
+import os
+from dotenv import load_dotenv
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 LANGUAGES = {
     'en': 'English',
     'vi': 'Vietnamese',
