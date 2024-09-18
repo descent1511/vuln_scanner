@@ -1,15 +1,12 @@
 from celery import shared_task
-from .telegram_bot import TelegramBot
+from ..telegram_bot import TelegramBot
 import time
 import xml.etree.ElementTree as ET
 import os
 from django.utils import timezone
-from googletrans import Translator
-import subprocess
-from .services.gvm import ssh_connect
+from ..services.gvm import ssh_connect
 import requests
-from.services.translator import translate
-from .models import SecurityAlert,Crawler,TelegramUser
+from..services.translator import translate
 @shared_task
 def wait_for_task_completion(task_id):
     ssh_client, error = ssh_connect()
@@ -45,7 +42,6 @@ def wait_for_task_completion(task_id):
         time.sleep(30)  
 
     report_id = get_report_id(task_id, ssh_client, gmp_username, gmp_password)
-    print(report_id)
 
     send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password)
     
@@ -75,6 +71,8 @@ def get_report_id(task_id, ssh_client, gmp_username, gmp_password):
 
     return report_id
 def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password):
+    backend_ip = os.getenv('BACKEND_IP')
+    backend_port = os.getenv('BACKEND_PORT', '8000')
     command = f"""
     gvm-cli --gmp-username {gmp_username} --gmp-password {gmp_password} socket --xml \\
     "<get_reports report_id='{report_id}' ignore_pagination='1' details='1' filter='levels=hmlg min_qod=0'/>"
@@ -86,7 +84,6 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
     if report_content_error:
         raise Exception(f"Error getting report content: {report_content_error}")
     
-    print(report_content_output)  
     
     try:
         root = ET.fromstring(report_content_output)
@@ -110,7 +107,7 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
     #         reference_list = []
     for vulnerability in vulnerabilities:
         severity = vulnerability.find("threat").text
-        if severity in ['High', 'Medium']:
+        if severity in ['High']:
             name = vulnerability.find("name").text
             host = vulnerability.find("host").text if vulnerability.find("host") is not None else "Unknown"
             hostname = vulnerability.find(".//hostname").text if vulnerability.find(".//hostname") is not None else "Unknown"
@@ -125,7 +122,7 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
             severity_score = vulnerability.find(".//severity/score").text if vulnerability.find(".//severity/score") is not None else "Unknown"
             severity_origin = vulnerability.find(".//severity/origin").text if vulnerability.find(".//severity/origin") is not None else "Unknown"
             solution = vulnerability.find(".//solution").text.strip() if vulnerability.find(".//solution") is not None else "No solution provided"
-            description = vulnerability.find(".//description").text.strip() if vulnerability.find(".//description") is not None else "No description provided"
+            description = vulnerability.find(".//description").text if vulnerability.find(".//description") is not None else "No description provided"
             
             references = vulnerability.findall(".//refs/ref")[:3]
             reference_list = []
@@ -186,13 +183,13 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
 
 
             try:
-                response = requests.post('http://127.0.0.1:8000/security-alerts/', json=security_alert_data)
+                response = requests.post('http://{backend_ip}:{backend_port}/security-alerts/', json=security_alert_data)
                 response.raise_for_status()
             except requests.RequestException as e:
                 print(f"Failed to send security alert data: {e}")
 
     # Fetching Telegram users
-    response = requests.get("http://localhost:8000/users/")
+    response = requests.get("http://{backend_ip}:{backend_port}/users/")
     response.raise_for_status()  
     telegram_users = response.json()
 
@@ -232,136 +229,3 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
 
             bot.send_message(telegram_user['telegram_id'], message)
 
-
-@shared_task
-def run_nikto_scan(task_id, host):
-    command = ["nikto", "-h", host, "-p", "1000"]
-    result = subprocess.run(command, capture_output=True, text=True)
-
-    # Get scan result from stdout
-    scan_report = result.stdout
-
-    # Initialize Telegram bot and send the scan result
-    bot = TelegramBot()
-    message = f"Task with ID {task_id} has finished.\n\nScan Report for {host}:\n{scan_report}"
-    bot.send_message(message)
-
-
-
-@shared_task
-def run_spiderfoot_scan_task(ip_address):
-    try:
-        ssh_client, error = ssh_connect()
-        if error:
-            raise Exception(f"SSH connection failed: {error}")
-        
-        command = (
-            'source /home/descent/Documents/spiderfoot/myenv/bin/activate && '
-            f'python3 /home/descent/Documents/spiderfoot/sf.py -s {ip_address}'
-        )
-        stdin, stdout, stderr = ssh_client.exec_command(command)
-        output = stdout.read().decode()
-        error_output = stderr.read().decode()
-        last_lines = error_output.splitlines()[-2:]
-
-        scan_id = None
-        status = None
-
-        for line in last_lines:
-            if "Scan [" in line and "]" in line:
-                scan_id = line.split("Scan [")[1].split("]")[0]
-            if "Scan completed with status" in line:
-                status = line.split("Scan completed with status ")[1]
-        
-        exit_status = stdout.channel.recv_exit_status()
-
-        if scan_id and status:
-            end_time = timezone.now().isoformat()   
-            update_data = {
-                'status': status,
-                'end_time': end_time
-            }
-            try:
-                response = requests.patch(f"http://127.0.0.1:8000/crawlers/{scan_id}/", json=update_data)
-                response.raise_for_status()
-            except requests.RequestException as e:
-                print(f"Failed to update Crawler: {e}")
-
-            if status == "FINISHED":
-                correlation_url = f"http://192.168.102.133:5001/scancorrelations?id={scan_id}"
-                response = requests.get(correlation_url)
-                response.raise_for_status()
-                correlations = response.json()
-
-                num_threats = len([corr for corr in correlations if corr[3] in ("HIGH", "CRITICAL")])
-
-                # Gửi số lượng threats qua API
-                update_data['num_threats_collected'] = num_threats
-                try:
-                    response = requests.patch(f"http://127.0.0.1:8000/crawlers/{scan_id}/", json=update_data)
-                    response.raise_for_status()
-                except requests.RequestException as e:
-                    print(f"Failed to update Crawler with threats: {e}")
-
-                # Create Correlations
-                for correlation in correlations:
-                    correlation_data = {
-                        'crawler': scan_id,
-                        'correlation_id': correlation[0],
-                        'headline': correlation[1],
-                        'collection_type': correlation[2],
-                        'risk_level': correlation[3],
-                        'description': correlation[4],
-                        'detailed_info': correlation[5],
-                        'metadata': correlation[6],
-                        'occurrences': correlation[7]
-                    }
-                    try:
-                        response = requests.post(f"http://127.0.0.1:8000/correlations/", json=correlation_data)
-                        response.raise_for_status()
-                    except requests.RequestException as e:
-                        print(f"Failed to create Correlation: {e}")
-
-                bot = TelegramBot()
-
-                response = requests.get("http://localhost:8000/users/")
-                response.raise_for_status()  
-                telegram_users = response.json()
-
-                for correlation in correlations:
-                    correlation_id = correlation[0]
-                    headline = correlation[1]
-                    severity = correlation[3]
-                    description = correlation[5]
-
-                    for telegram_user in telegram_users:
-                        language = telegram_user['language']
-
-                        if language == 'vi':
-                            message = (
-                                f"🛡️ **Thông báo từ SpiderFoot**\n\n"
-                                f"**ID:** `{correlation_id}`\n\n"
-                                f"**Tiêu đề:** *{translate(headline)}*\n\n"
-                                f"**Mức độ:** `{translate(severity)}`\n\n"
-                                f"**Mô tả:**\n"
-                                f"> {translate(description)}\n\n"
-                                f"---\n"
-                            )
-                        else:
-                            message = (
-                                f"🛡️ **SpiderFoot Correlation Alert**\n\n"
-                                f"**ID:** `{correlation_id}`\n\n"
-                                f"**Headline:** *{headline}*\n\n"
-                                f"**Severity:** `{severity}`\n\n"
-                                f"**Description:**\n"
-                                f"> {description}\n\n"
-                                f"---\n"
-                            )
-
-                        bot.send_message(telegram_user['telegram_id'], message)
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-    finally:
-        ssh_client.close()

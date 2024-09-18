@@ -4,13 +4,16 @@ from .models import Target,PortList, Task,ScanConfig, Scanner, Vulnerability, Se
 from rest_framework import generics, viewsets, status
 from django.utils.timezone import now
 import xml.etree.ElementTree as ET 
-from .services.gvm import create_target, create_task,start_task, get_report_id,get_report_content,get_task_status
+from .services.gvm import create_target, create_task,start_task, delete_task, delete_target
 from rest_framework.response import Response
 from rest_framework import viewsets
 import requests
 from rest_framework.decorators import action
-from .tasks import wait_for_task_completion,run_spiderfoot_scan_task
-
+from .tasks.openvas_task import wait_for_task_completion
+from .tasks.spiderfoot_task import run_spiderfoot_scan_task
+from rest_framework.views import APIView
+import os
+from django_celery_beat.models import PeriodicTask, IntervalSchedule
 class TargetViewSet(viewsets.ModelViewSet):
     queryset = Target.objects.all()
     serializer_class = TargetSerializer  
@@ -47,6 +50,24 @@ class TargetViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def destroy(self, request, *args, **kwargs):
+        target = self.get_object()
+
+        related_tasks = Task.objects.filter(target=target)
+        if related_tasks.exists():
+            return Response({'error': 'Cannot delete target because there are tasks associated with this target.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        related_crawlers = Crawler.objects.filter(target=target)
+        if related_crawlers.exists():
+            return Response({'error': 'Cannot delete target because there are crawlers associated with this target.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            delete_target(target.target_id)
+            target.delete() 
+        except Exception as e:
+            return Response({'error': f"Failed to delete target: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'status': 'Target deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
@@ -106,7 +127,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def start_task(self, request, pk=None):
         task = self.get_object() 
         try:
-            # start_task(task.task_id)  
+            start_task(task.task_id)  
             wait_for_task_completion.delay(task.task_id)
           
         except Exception as e:
@@ -194,6 +215,16 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         return Response({'status': "Task created and started successfully"}, status=status.HTTP_200_OK)
     
+    def destroy(self, request, *args, **kwargs):
+        task = self.get_object()
+        try:
+            delete_task(task.task_id) 
+            task.delete() 
+        except Exception as e:
+            return Response({'error': f"Failed to delete task: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({'status': 'Task deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 class VulnerabilityViewSet(viewsets.ModelViewSet):
@@ -211,17 +242,18 @@ class CrawlerViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
     
         target_id = request.data.get('target_id')
-
+        spiderfoot_ip = os.getenv('SPIDERFOOT_IP')
+        spiderfoot_port = os.getenv('SPIDERFOOT_PORT', '5001')
         try:
             target = Target.objects.get(target_id=target_id)
         except Target.DoesNotExist:
             return Response({"error": "Target not found."}, status=status.HTTP_404_NOT_FOUND)
-
+        
         ip_address = target.hosts
         run_spiderfoot_scan_task.delay(ip_address)
         time.sleep(2)
         try:
-            response = requests.get("http://192.168.102.133:5001/scanlist")
+            response = requests.get(f"http://{spiderfoot_ip}:{spiderfoot_port}/scanlist")
             response.raise_for_status()
             scan_list = response.json()
 
@@ -266,3 +298,23 @@ class TelegramUserViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+    
+# class ScheduleTaskAPI(APIView):
+#     def post(self, request):
+#         task_name = request.data.get('task_name')
+#         interval_every = int(request.data.get('interval', 1)) 
+#         task_args = request.data.get('args', [])
+        
+#         schedule, created = IntervalSchedule.objects.get_or_create(
+#             every=interval_every,
+#             period=IntervalSchedule.SECONDS, 
+#         )
+
+#         PeriodicTask.objects.create(
+#             interval=schedule,
+#             name=task_name,
+#             task='your_app.tasks.my_scheduled_task',
+#             args=json.dumps(task_args),
+#         )
+
+#         return Response({"message": "Task scheduled successfully!"}, status=status.HTTP_201_CREATED)

@@ -54,6 +54,11 @@ class CrawlerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Crawler
         fields = '__all__'
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['target'] = TargetSerializer(instance.target).data
+        return representation
 
 class TelegramUserSerializer(serializers.ModelSerializer):
     class Meta:

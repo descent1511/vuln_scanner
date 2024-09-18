@@ -137,6 +137,36 @@ def get_report_content(report_id):
     
     return report_content_output
 
+def delete_task(task_id):
+    command = f"""
+    gvm-cli --gmp-username {gmp_username} --gmp-password {gmp_password} socket --xml \\
+    "<delete_task task_id='{task_id}'/>"
+    """
+    stdin, stdout, stderr = ssh_client.exec_command(command)
+    delete_task_output = stdout.read().decode()
+    delete_task_error = stderr.read().decode()
+
+    if delete_task_error:
+        raise Exception(f"Error deleting task: {delete_task_error}")
+    else:
+        # print(f"Task {task_id} has been successfully deleted.")
+        return True
+
+def delete_target(target_id):
+    command = f"""
+    gvm-cli --gmp-username {gmp_username} --gmp-password {gmp_password} socket --xml \\
+    "<delete_target target_id='{target_id}'/>"
+    """
+    stdin, stdout, stderr = ssh_client.exec_command(command)
+    delete_target_output = stdout.read().decode()
+    delete_target_error = stderr.read().decode()
+
+    if delete_target_error:
+        raise Exception(f"Error deleting target: {delete_target_error}")
+    else:
+        return True
+
+
 def parse_gvm_id(output):
     root = ET.fromstring(output)
     return root.attrib['id']
