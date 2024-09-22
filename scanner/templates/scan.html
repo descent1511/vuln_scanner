@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viettel Cloud Marketplace</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .sidebar {
+            background-color: #111c44;
+            color: white;
+            height: 100vh;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .sidebar h5 {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .card-container {
+            margin-top: 20px;
+        }
+        .card {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .card-text {
+            font-size: 14px;
+            color: #666;
+        }
+        .navbar {
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        .search-bar {
+            border-radius: 20px;
+            border: 1px solid #ccc;
+        }
+        .category-heading {
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        /* Toggle Sidebar */
+        .hidden-sidebar {
+            transform: translateX(-250px);
+        }
+        .target-input-container, .schedule-container, .results-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation bar -->
+<nav class="navbar navbar-light">
+    <button class="btn btn-primary" id="toggleSidebarBtn">☰</button>
+    <a class="navbar-brand" href="#">
+        <img src="./static/viettel-redy-2020.svg" height="30" alt="Viettel Cloud">
+    </a>
+    <form class="form-inline">
+        <input class="form-control mr-sm-2 search-bar" type="search" placeholder="Services, products, docs..." aria-label="Search">
+    </form>
+    <div class="ml-auto">
+        <button class="btn btn-light">EN</button>
+        <button class="btn btn-light">Sign in</button>
+    </div>
+</nav>
+
+<!-- Page Layout -->
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar" id="sidebar">
+            <h5>Marketplace</h5>
+            <div class="mt-4">
+                <h6>Category</h6>
+                <ul class="list-unstyled">
+                    <li>
+                        <a href="#" class="text-white" id="threatIntelligenceLink">Threat Intelligence</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-10">
+            <div id="mainContent" class="d-none">
+                <div class="d-flex justify-content-between mt-4">
+                    <h5 class="category-heading">THREAT INTELLIGENCE</h5>
+                </div>
+
+                <!-- Options for Threat Intelligence -->
+                <div class="row card-container">
+                    <!-- Crawler Information Option -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Crawler Information</h5>
+                                <button class="btn btn-primary" id="crawlerInfoBtn">Start Crawler Information</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scan Vulnerability Option -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Scan Vulnerability</h5>
+                                <button class="btn btn-primary" id="scanVulnerabilityBtn">Start Scan Vulnerability</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Schedule Scan or Crawler Option -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Schedule Scan/Crawler</h5>
+                                <button class="btn btn-primary" id="scheduleBtn">Set Schedule</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input for Target -->
+                <div class="target-input-container d-none" id="targetInputContainer">
+                    <label for="target">Enter Target:</label>
+                    <input type="text" class="form-control" id="target" placeholder="Enter target for scanning">
+                    <button class="btn btn-success mt-3" id="submitTargetBtn">Submit</button>
+                </div>
+
+                <!-- Schedule Setting -->
+                <div class="schedule-container d-none" id="scheduleContainer">
+                    <label for="scheduleTarget">Enter Target:</label>
+                    <input type="text" class="form-control" id="scheduleTarget" placeholder="Enter target for scheduling">
+
+                    <label for="scanType" class="mt-3">Select Scan Type:</label>
+                    <select class="form-control" id="scanType">
+                        <option value="spiderfoot">SpiderFoot</option>
+                        <option value="openvas">OpenVAS</option>
+                    </select>
+
+                    <label for="scheduleTime" class="mt-3">Schedule time (in minutes):</label>
+                    <input type="number" class="form-control" id="scheduleTime" placeholder="Set time in minutes">
+
+                    <button class="btn btn-success mt-3" id="submitScheduleBtn">Submit</button>
+                </div>
+
+                <!-- Results Button -->
+                <div class="results-container mt-4">
+                    <button class="btn btn-info" id="viewResultsBtn">View Scan & Crawler Results</button>
+                </div>
+
+                <!-- Placeholder for displaying results -->
+                <div class="results-display-container d-none" id="resultsDisplayContainer">
+                    <h5>Results:</h5>
+                    <div id="resultsContent">No results available yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Custom JavaScript for Sidebar Toggle and Threat Intelligence Options -->
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+    const threatIntelligenceLink = document.getElementById('threatIntelligenceLink');
+    const mainContent = document.getElementById('mainContent');
+    const crawlerInfoBtn = document.getElementById('crawlerInfoBtn');
+    const scanVulnerabilityBtn = document.getElementById('scanVulnerabilityBtn');
+    const scheduleBtn = document.getElementById('scheduleBtn');
+    const targetInputContainer = document.getElementById('targetInputContainer');
+    const scheduleContainer = document.getElementById('scheduleContainer');
+    const resultsDisplayContainer = document.getElementById('resultsDisplayContainer');
+    const resultsContent = document.getElementById('resultsContent');
+    const submitTargetBtn = document.getElementById('submitTargetBtn');
+    const submitScheduleBtn = document.getElementById('submitScheduleBtn');
+
+    toggleSidebarBtn.addEventListener('click', function () {
+        sidebar.classList.toggle('hidden-sidebar');
+    });
+
+    threatIntelligenceLink.addEventListener('click', function () {
+        mainContent.classList.remove('d-none');
+        hideAllContainers(); 
+    });
+
+    function hideAllContainers() {
+        targetInputContainer.classList.add('d-none');
+        scheduleContainer.classList.add('d-none');
+        resultsDisplayContainer.classList.add('d-none');
+    }
+
+    crawlerInfoBtn.addEventListener('click', function () {
+        hideAllContainers();
+        targetInputContainer.classList.remove('d-none');
+        document.getElementById('target').placeholder = "Enter target for Crawler Information";
+        submitTargetBtn.onclick = function () {
+            const target = document.getElementById('target').value;
+            fetch('/crawlers/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ value: target })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert("Crawler task created and started successfully.");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        };
+    });
+
+    scanVulnerabilityBtn.addEventListener('click', function () {
+        hideAllContainers();
+        targetInputContainer.classList.remove('d-none');
+        document.getElementById('target').placeholder = "Enter target for Vulnerability Scan";
+        submitTargetBtn.onclick = function () {
+            const target = document.getElementById('target').value;
+            fetch('/tasks/create_and_start_task/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    value: target,
+                    port_list: 'IANA_ASSIGNED_TCP',
+                    scan_config: 'FULL_AND_FAST',
+                    scanner: 'OPENVAS'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert("Scan task created and started successfully.");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        };
+    });
+
+    scheduleBtn.addEventListener('click', function () {
+        hideAllContainers();
+        scheduleContainer.classList.remove('d-none');
+    });
+
+    submitScheduleBtn.onclick = function () {
+        const targetValue = document.getElementById('scheduleTarget').value;
+        const scanType = document.getElementById('scanType').value;
+        const scheduleTime = document.getElementById('scheduleTime').value;
+        if (!targetValue || !scheduleTime) {
+            alert("Please fill in all fields.");
+            return;
+        }
+        fetch('/schedules/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                value: targetValue,
+                interval: scheduleTime,
+                scan_type: scanType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert("Error: " + data.error);
+            } else {
+                alert(`Scheduled ${scanType} scan for target "${targetValue}" every ${scheduleTime} minutes.`);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    };
+</script>
+</body>
+</html>

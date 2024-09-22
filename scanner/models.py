@@ -19,16 +19,33 @@ class Scanner(models.TextChoices):
     OPENVAS = '08b69003-5fc2-4037-a479-93b440211c73'
     NIKTO = ''
 
+
 class Target(models.Model):
     target_name = models.CharField(max_length=255, blank=True)
-    hosts = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
     port_list = models.CharField(
         max_length=36,
         choices=PortList.choices,
         default=PortList.IANA_ASSIGNED_TCP
     )
     target_id = models.CharField(max_length=36, primary_key=True, blank=True)
+    value_type = models.CharField(max_length=20)
 
+class TargetSchedule(models.Model):
+    SCAN_TYPE_CHOICES = [
+        ('openvas', 'OpenVAS'),
+        ('spiderfoot', 'SpiderFoot'),
+    ]
+    target = models.ForeignKey(Target, on_delete=models.CASCADE)
+    value = models.CharField(max_length=255)
+    interval = models.IntegerField()
+    last_run = models.DateTimeField(null=True, blank=True)
+    scan_type = models.CharField(max_length=20, choices=SCAN_TYPE_CHOICES)
+
+    def __str__(self):
+        return f"{self.value} ({self.scan_type})"
+
+    
 class Task(models.Model):
     task_name = models.CharField(max_length=255, blank=True)
     target = models.ForeignKey(Target, on_delete=models.CASCADE)

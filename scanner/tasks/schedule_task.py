@@ -1,56 +1,59 @@
-from celery import shared_task
 import requests
-from celery.schedules import crontab,timedelta
-from vuln_scanner.celery import app
+from datetime import datetime
 
-
+import os
+from celery import shared_task
 @shared_task
-def run_spiderfoot_task():
-    targets_url = 'http://127.0.0.1:8000/targets/'
-    crawlers_url = 'http://127.0.0.1:8000/crawlers/'
+def check_targets():
+    now = datetime.now()
+    
+    backend_ip = os.getenv('BACKEND_IP')
+    backend_port = os.getenv('BACKEND_PORT', '8000')
 
     try:
-        response = requests.get(targets_url)
-        if response.status_code == 200:
-            targets = response.json()
-
-            for target in targets:
-                # if target['hosts'] in hosts_to_check:
-                target_id = target['target_id'] 
-                print(target_id)
-                data = {
-                    "target_id": target_id
-                }
-                    # Gửi request POST tới API crawlers
-                crawler_response = requests.post(crawlers_url, json=data)
-                print(crawler_response)
-                if crawler_response.status_code == 200:
-                    print(f'Successfully crawled target {target_id}: {crawler_response.json()}')
-                else:
-                    print(f'Failed to crawl target {target_id}: {crawler_response.status_code}')
-        else:
-            print(f'Failed to get targets: {response.status_code}')
+        schedule_targets = requests.get(f"http://{backend_ip}:{backend_port}/schedules/").json()
     except requests.RequestException as e:
-        print(f'Error fetching targets or crawling: {str(e)}')
+        print(f"Failed to retrieve schedule targets: {e}")
+        return
 
-    return "API calls complete"
+    print(schedule_targets)
+    for schedule_target in schedule_targets:
+        interval = schedule_target['interval']
+        if schedule_target['last_run'] is not None : 
+            print((now -datetime.strptime(schedule_target['last_run'], "%Y-%m-%dT%H:%M:%S.%fZ") ).total_seconds())
+        if schedule_target['last_run'] is None or (now -datetime.strptime(schedule_target['last_run'], "%Y-%m-%dT%H:%M:%S.%fZ") ).total_seconds() >= interval:
+            value = schedule_target['value']
+            scan_type = schedule_target['scan_type']
 
+            if scan_type == 'spiderfoot':
+                crawler_payload = {
+                    "value": value
+                }
+                try:
+                    response = requests.post(f"http://{backend_ip}:{backend_port}/crawlers/", json=crawler_payload)
+                    response.raise_for_status()
+                    print(f"SpiderFoot crawler started for value '{value}'")
+                except requests.RequestException as e:
+                    print(f"Failed to create SpiderFoot crawler for value '{value}': {e}")
 
-# from celery import shared_task
-# from celery.utils.log import get_task_logger
+            elif scan_type == 'openvas':
+                task_payload = {
+                    "value": value
+                }
+                try:
+                    response = requests.post(f"http://{backend_ip}:{backend_port}/tasks/", json=task_payload)
+                    response.raise_for_status()
+                    print(f"OpenVAS scan started for value '{value}'")
+                except requests.RequestException as e:
+                    print(f"Failed to create OpenVAS task for value '{value}': {e}")
 
-# logger = get_task_logger(__name__)
-
-# @shared_task
-# def run_spiderfoot_task():
-#     logger.info('SpiderFoot task is running')
-#     # Add your SpiderFoot scan logic here
-#     # Call the SpiderFoot API, process data, etc.
-#     pass
-
-# @shared_task
-# def run_openvas_task():
-#     logger.info('OpenVAS task is running')
-#     # Add your OpenVAS scan logic here
-#     # Call the OpenVAS API, process data, etc.
-#     pass
+            try:
+                update_url = f"http://{backend_ip}:{backend_port}/schedules/{schedule_target['id']}/"
+                update_payload = {
+                    "last_run": now.isoformat() 
+                }
+                update_response = requests.patch(update_url, json=update_payload)
+                update_response.raise_for_status()
+                print(f"Updated last_run for schedule_target '{schedule_target['id']}'")
+            except requests.RequestException as e:
+                print(f"Failed to update last_run for schedule_target '{schedule_target['id']}': {e}")

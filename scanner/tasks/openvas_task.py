@@ -7,6 +7,7 @@ from django.utils import timezone
 from ..services.gvm import ssh_connect
 import requests
 from..services.translator import translate
+from celery import shared_task
 @shared_task
 def wait_for_task_completion(task_id):
     ssh_client, error = ssh_connect()
@@ -42,7 +43,6 @@ def wait_for_task_completion(task_id):
         time.sleep(30)  
 
     report_id = get_report_id(task_id, ssh_client, gmp_username, gmp_password)
-
     send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password)
     
     ssh_client.close()
@@ -183,13 +183,13 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
 
 
             try:
-                response = requests.post('http://{backend_ip}:{backend_port}/security-alerts/', json=security_alert_data)
+                response = requests.post(f'http://{backend_ip}:{backend_port}/security-alerts/', json=security_alert_data)
                 response.raise_for_status()
             except requests.RequestException as e:
                 print(f"Failed to send security alert data: {e}")
 
     # Fetching Telegram users
-    response = requests.get("http://{backend_ip}:{backend_port}/users/")
+    response = requests.get(f"http://{backend_ip}:{backend_port}/users/")
     response.raise_for_status()  
     telegram_users = response.json()
 

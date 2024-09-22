@@ -39,6 +39,7 @@ services:
       SPIDERFOOT_IP: ${SPIDERFOOT_IP}
       SPIDERFOOT_SCRIPT_PATH: ${SPIDERFOOT_SCRIPT_PATH}
       BACKEND_IP: backend
+      BOT_TOKEN: ${BOT_TOKEN}
     depends_on:
       - postgres
       - redis
