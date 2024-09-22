@@ -1,6 +1,6 @@
 import time
-from .serializers import TargetSerializer, TaskSerializer, VulnerabilitySerializer, SecurityAlertSerializer,CrawlerSerializer,CorrelationSerializer, TelegramUserSerializer, TargetScheduleSerializer
-from .models import Target,PortList, Task,ScanConfig, Scanner, Vulnerability, SecurityAlert, Crawler,Correlation, TelegramUser, TargetSchedule
+from .serializers import TargetSerializer, TaskSerializer, VulnerabilitySerializer, SecurityAlertSerializer,CrawlerSerializer,CorrelationSerializer, TelegramUserSerializer, TargetScheduleSerializer, ScanHistorySerializer
+from .models import Target,PortList, Task,ScanConfig, Scanner, Vulnerability, SecurityAlert, Crawler,Correlation, TelegramUser, TargetSchedule, ScanHistory
 from rest_framework import generics, viewsets, status
 from django.utils.timezone import now
 import xml.etree.ElementTree as ET 
@@ -405,4 +405,7 @@ class ScheduleTargetViewSet(viewsets.ModelViewSet):
         return Response({"message": f"Target '{target_value}' has been scheduled with scan_type '{scan_type}' every {interval} seconds."},
                         status=status.HTTP_201_CREATED)
     
-  
+class ScanHistoryViewSet(viewsets.ModelViewSet):
+    queryset = ScanHistory.objects.all()
+    serializer_class = ScanHistorySerializer
+    

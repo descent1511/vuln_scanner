@@ -9,7 +9,8 @@ from .views import (
     CrawlerViewSet,
     CorrelationsViewSet,
     TelegramUserViewSet,
-    ScheduleTargetViewSet
+    ScheduleTargetViewSet,
+    ScanHistoryViewSet
 )
 from .views import threat_intelligence_view
 # bot = TelegramBot()
@@ -23,6 +24,7 @@ router.register(r'crawlers', CrawlerViewSet)
 router.register(r'correlations', CorrelationsViewSet)
 router.register(r'users', TelegramUserViewSet)
 router.register(r'schedules', ScheduleTargetViewSet)
+router.register(r'scan-history', ScanHistoryViewSet)
 urlpatterns = [
     path('threat-intelligence/', threat_intelligence_view, name='threat_intelligence'),
     # path('routes/<int:route_id>/drivers/', DriversOnRouteView.as_view(), name='drivers-on-route'),

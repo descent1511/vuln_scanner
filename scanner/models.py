@@ -63,14 +63,17 @@ class Task(models.Model):
 
 class ScanHistory(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='scans')
-    start_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    scan_status = models.CharField(max_length=50, default='Pending')
     results = models.TextField(blank=True)
-    vulnerabilities_found = models.ManyToManyField('Vulnerability', related_name='scans')
-
+    vulnerabilities = models.JSONField(default=list, blank=True)       
+    applications = models.JSONField(default=list, blank=True)   
+    operating_system = models.CharField(max_length=100, blank=True) 
+    cve_names = models.JSONField(default=list, blank=True)    
+    scan_id = models.CharField(max_length=36, primary_key=True, blank=True)
     def __str__(self):
-        return f"Scan {self.id} for Task {self.task.task_name} - Status: {self.scan_status}"
+        return f"Scan {self.id} for Task {self.task.task_name}"
+
 
 class Vulnerability(models.Model):
     name = models.CharField(max_length=255)

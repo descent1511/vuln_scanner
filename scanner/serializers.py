@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Target, PortList, ScanConfig,Task, Crawler,TelegramUser,TargetSchedule
+from .models import Target, PortList, ScanConfig,Task, Crawler,TelegramUser,TargetSchedule,ScanHistory
 
 from rest_framework import serializers
 from .models import Vulnerability, SecurityAlert,Correlation
@@ -74,4 +74,15 @@ class TargetScheduleSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['target'] = TargetSerializer(instance.target).data
+        return representation
+    
+class ScanHistorySerializer(serializers.ModelSerializer):
+    task = TaskSerializer()
+    class Meta:
+        model = ScanHistory
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['task'] = TaskSerializer(instance.task).data
         return representation
