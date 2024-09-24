@@ -50,6 +50,20 @@ def wait_for_crawler_complete(scan_id):
         correlations = response.json()
 
         num_threats = len([corr for corr in correlations if corr[3] in ("HIGH", "CRITICAL")])
+        try:
+            if num_threats > 0:
+                response = requests.get(f"http://{backend_ip}:{backend_port}/crawlers/{scan_id}/")
+                response.raise_for_status()  
+                crawler = response.json()
+                
+                if crawler['target']['value_type'] in ["domain_name", "ip_address", "hostname"]:
+                    task_response = requests.post(
+                        f"http://{backend_ip}:{backend_port}/tasks/create_and_start_task/",
+                        json={'value': crawler['target']['value']}
+                    )
+                    task_response.raise_for_status()
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
         update_data['num_threats_collected'] = num_threats
         try:
@@ -74,9 +88,9 @@ def wait_for_crawler_complete(scan_id):
                 response = requests.post(f"http://{backend_ip}:{backend_port}/correlations/", json=correlation_data)
                 response.raise_for_status()
             except requests.RequestException as e:
-                raise RuntimeError(f"Failed to create Correlation: {e}")
+                raise RuntimeError(f"Failed to create scan with openvas from spiderfoot: {e}")
 
-        # Send notifications using Telegram bot
+        
         bot = TelegramBot()
         response = requests.get(f"http://{backend_ip}:{backend_port}/users/")
         response.raise_for_status()

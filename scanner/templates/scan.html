@@ -32,10 +32,6 @@
             font-size: 18px;
             font-weight: bold;
         }
-        .card-text {
-            font-size: 14px;
-            color: #666;
-        }
         .navbar {
             background-color: white;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
@@ -52,18 +48,36 @@
         .hidden-sidebar {
             transform: translateX(-250px);
         }
-        .target-input-container, .schedule-container, .results-container {
+        .form-container {
             margin-top: 20px;
+        }
+        /* Loading Spinner */
+        .d-none {
+            display: none;
+        }
+        #loadingSpinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
 
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="d-none">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+
 <!-- Navigation bar -->
 <nav class="navbar navbar-light">
     <button class="btn btn-primary" id="toggleSidebarBtn">☰</button>
-    <a class="navbar-brand" href="#">
-        <img src="./static/viettel-redy-2020.svg" height="30" alt="Viettel Cloud">
+    <a class="navbar-brand ml-4" href="#">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Logo_Viettel_from_7_January_2021_Slogan.svg" height="30" alt="Viettel Cloud">
     </a>
     <form class="form-inline">
         <input class="form-control mr-sm-2 search-bar" type="search" placeholder="Services, products, docs..." aria-label="Search">
@@ -130,16 +144,23 @@
                     </div>
                 </div>
 
-                <!-- Input for Target -->
-                <div class="target-input-container d-none" id="targetInputContainer">
-                    <label for="target">Enter Target:</label>
-                    <input type="text" class="form-control" id="target" placeholder="Enter target for scanning">
-                    <button class="btn btn-success mt-3" id="submitTargetBtn">Submit</button>
+                <!-- Crawler Form -->
+                <div class="form-container d-none" id="crawlerFormContainer">
+                    <label for="crawlerTarget">Enter Target for Crawler:</label>
+                    <input type="text" class="form-control" id="crawlerTarget" placeholder="Enter target for Crawler Information">
+                    <button class="btn btn-success mt-3" id="submitCrawlerBtn">Submit Crawler</button>
                 </div>
 
-                <!-- Schedule Setting -->
-                <div class="schedule-container d-none" id="scheduleContainer">
-                    <label for="scheduleTarget">Enter Target:</label>
+                <!-- Scan Form -->
+                <div class="form-container d-none" id="scanFormContainer">
+                    <label for="scanTarget">Enter Target for Vulnerability Scan:</label>
+                    <input type="text" class="form-control" id="scanTarget" placeholder="Enter target for Vulnerability Scan">
+                    <button class="btn btn-success mt-3" id="submitScanBtn">Submit Scan</button>
+                </div>
+
+                <!-- Schedule Form -->
+                <div class="form-container d-none" id="scheduleFormContainer">
+                    <label for="scheduleTarget">Enter Target for Scheduling:</label>
                     <input type="text" class="form-control" id="scheduleTarget" placeholder="Enter target for scheduling">
 
                     <label for="scanType" class="mt-3">Select Scan Type:</label>
@@ -148,21 +169,10 @@
                         <option value="openvas">OpenVAS</option>
                     </select>
 
-                    <label for="scheduleTime" class="mt-3">Schedule time (in minutes):</label>
-                    <input type="number" class="form-control" id="scheduleTime" placeholder="Set time in minutes">
+                    <label for="scheduleTime" class="mt-3">Schedule time (in seconds):</label>
+                    <input type="number" class="form-control" id="scheduleTime" placeholder="Set time in seconds">
 
-                    <button class="btn btn-success mt-3" id="submitScheduleBtn">Submit</button>
-                </div>
-
-                <!-- Results Button -->
-                <div class="results-container mt-4">
-                    <button class="btn btn-info" id="viewResultsBtn">View Scan & Crawler Results</button>
-                </div>
-
-                <!-- Placeholder for displaying results -->
-                <div class="results-display-container d-none" id="resultsDisplayContainer">
-                    <h5>Results:</h5>
-                    <div id="resultsContent">No results available yet.</div>
+                    <button class="btn btn-success mt-3" id="submitScheduleBtn">Submit Schedule</button>
                 </div>
             </div>
         </div>
@@ -183,12 +193,21 @@
     const crawlerInfoBtn = document.getElementById('crawlerInfoBtn');
     const scanVulnerabilityBtn = document.getElementById('scanVulnerabilityBtn');
     const scheduleBtn = document.getElementById('scheduleBtn');
-    const targetInputContainer = document.getElementById('targetInputContainer');
-    const scheduleContainer = document.getElementById('scheduleContainer');
-    const resultsDisplayContainer = document.getElementById('resultsDisplayContainer');
-    const resultsContent = document.getElementById('resultsContent');
-    const submitTargetBtn = document.getElementById('submitTargetBtn');
+    const crawlerFormContainer = document.getElementById('crawlerFormContainer');
+    const scanFormContainer = document.getElementById('scanFormContainer');
+    const scheduleFormContainer = document.getElementById('scheduleFormContainer');
+    const submitCrawlerBtn = document.getElementById('submitCrawlerBtn');
+    const submitScanBtn = document.getElementById('submitScanBtn');
     const submitScheduleBtn = document.getElementById('submitScheduleBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    function showLoading() {
+        loadingSpinner.classList.remove('d-none');
+    }
+
+    function hideLoading() {
+        loadingSpinner.classList.add('d-none');
+    }
 
     toggleSidebarBtn.addEventListener('click', function () {
         sidebar.classList.toggle('hidden-sidebar');
@@ -196,85 +215,110 @@
 
     threatIntelligenceLink.addEventListener('click', function () {
         mainContent.classList.remove('d-none');
-        hideAllContainers(); 
+        hideAllForms();
     });
 
-    function hideAllContainers() {
-        targetInputContainer.classList.add('d-none');
-        scheduleContainer.classList.add('d-none');
-        resultsDisplayContainer.classList.add('d-none');
+    function hideAllForms() {
+        crawlerFormContainer.classList.add('d-none');
+        scanFormContainer.classList.add('d-none');
+        scheduleFormContainer.classList.add('d-none');
     }
 
     crawlerInfoBtn.addEventListener('click', function () {
-        hideAllContainers();
-        targetInputContainer.classList.remove('d-none');
-        document.getElementById('target').placeholder = "Enter target for Crawler Information";
-        submitTargetBtn.onclick = function () {
-            const target = document.getElementById('target').value;
-            fetch('/crawlers/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ value: target })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Error: " + data.error);
-                } else {
-                    alert("Crawler task created and started successfully.");
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        };
+        hideAllForms();
+        crawlerFormContainer.classList.remove('d-none');
     });
 
     scanVulnerabilityBtn.addEventListener('click', function () {
-        hideAllContainers();
-        targetInputContainer.classList.remove('d-none');
-        document.getElementById('target').placeholder = "Enter target for Vulnerability Scan";
-        submitTargetBtn.onclick = function () {
-            const target = document.getElementById('target').value;
-            fetch('/tasks/create_and_start_task/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    value: target,
-                    port_list: 'IANA_ASSIGNED_TCP',
-                    scan_config: 'FULL_AND_FAST',
-                    scanner: 'OPENVAS'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Error: " + data.error);
-                } else {
-                    alert("Scan task created and started successfully.");
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        };
+        hideAllForms();
+        scanFormContainer.classList.remove('d-none');
     });
 
     scheduleBtn.addEventListener('click', function () {
-        hideAllContainers();
-        scheduleContainer.classList.remove('d-none');
+        hideAllForms();
+        scheduleFormContainer.classList.remove('d-none');
     });
+
+    submitCrawlerBtn.onclick = function () {
+        const target = document.getElementById('crawlerTarget').value;
+        submitCrawlerBtn.disabled = true;
+        submitCrawlerBtn.textContent = "Submitting...";
+        showLoading();
+
+        fetch('/crawlers/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ value: target })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            submitCrawlerBtn.disabled = false;
+            submitCrawlerBtn.textContent = "Submit Crawler";
+            if (data.error) {
+                alert("Error: " + data.error);
+            } else {
+                alert("Crawler task created and started successfully.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            hideLoading();
+            submitCrawlerBtn.disabled = false;
+            submitCrawlerBtn.textContent = "Submit Crawler";
+        });
+    };
+
+    submitScanBtn.onclick = function () {
+        const target = document.getElementById('scanTarget').value;
+        submitScanBtn.disabled = true;
+        submitScanBtn.textContent = "Submitting...";
+        showLoading();
+
+        fetch('/tasks/create_and_start_task/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                value: target,
+                port_list: 'IANA_ASSIGNED_TCP',
+                scan_config: 'FULL_AND_FAST',
+                scanner: 'OPENVAS'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            submitScanBtn.disabled = false;
+            submitScanBtn.textContent = "Submit Scan";
+            if (data.error) {
+                alert("Error: " + data.error);
+            } else {
+                alert("Scan task created and started successfully.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            hideLoading();
+            submitScanBtn.disabled = false;
+            submitScanBtn.textContent = "Submit Scan";
+        });
+    };
 
     submitScheduleBtn.onclick = function () {
         const targetValue = document.getElementById('scheduleTarget').value;
         const scanType = document.getElementById('scanType').value;
         const scheduleTime = document.getElementById('scheduleTime').value;
-        if (!targetValue || !scheduleTime) {
-            alert("Please fill in all fields.");
-            return;
-        }
+
+        submitScheduleBtn.disabled = true;
+        submitScheduleBtn.textContent = "Submitting...";
+        showLoading();
+
         fetch('/schedules/', {
             method: 'POST',
             headers: {
@@ -289,13 +333,21 @@
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
+            submitScheduleBtn.disabled = false;
+            submitScheduleBtn.textContent = "Submit Schedule";
             if (data.error) {
                 alert("Error: " + data.error);
             } else {
                 alert(`Scheduled ${scanType} scan for target "${targetValue}" every ${scheduleTime} minutes.`);
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Error:', error);
+            hideLoading();
+            submitScheduleBtn.disabled = false;
+            submitScheduleBtn.textContent = "Submit Schedule";
+        });
     };
 </script>
 </body>
