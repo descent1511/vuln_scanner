@@ -6,9 +6,15 @@ import os
 from django.utils import timezone
 from ..services.gvm import ssh_connect
 import requests
-from..services.translator import translate
+from ..services.translator import translate
 from celery import shared_task
 import re
+import uuid
+
+backend_ip = os.getenv('BACKEND_IP')
+backend_port = os.getenv('BACKEND_PORT', '8000')
+
+
 @shared_task
 def wait_for_task_completion(task_id):
     ssh_client, error = ssh_connect()
@@ -22,7 +28,16 @@ def wait_for_task_completion(task_id):
         gvm-cli --gmp-username {gmp_username} --gmp-password {gmp_password} socket --xml \\
         "<get_tasks task_id='{task_id}'/>"
     """
+    scan_history_id = str(uuid.uuid4())
+    try:
+        response = requests.post(f"http://{backend_ip}:{backend_port}/scan-history/", json={"task": task_id,"scan_id":scan_history_id})
+        if response.status_code != 201:
+            raise Exception(f"Failed to create scan history. Status code: {response.status_code}, Response: {response.text}")
+
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"An error occurred while making the request: {e}")
     
+
     while True:
         stdin, stdout, stderr = ssh_client.exec_command(command)
         task_status_output = stdout.read().decode()
@@ -44,7 +59,7 @@ def wait_for_task_completion(task_id):
         time.sleep(30)  
 
     report_id = get_report_id(task_id, ssh_client, gmp_username, gmp_password)
-    send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password,task_id)
+    send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password,task_id,scan_history_id)
     
     ssh_client.close()
 
@@ -72,8 +87,7 @@ def get_report_id(task_id, ssh_client, gmp_username, gmp_password):
 
     return report_id
 
-def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password, task_id):
-    print(report_id)
+def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password,task_id, scan_history_id):
     backend_ip = os.getenv('BACKEND_IP')
     backend_port = os.getenv('BACKEND_PORT', '8000')
     
@@ -147,29 +161,26 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
         cve_list = list(set(cve_list))
         vulnerability_list = list(set(vulnerability_list))
         # print(task_id)
-        scan_history_data = {
-            "task": {"task_id": task_id},
-            "vulnerabilities": vulnerability_list,
-            "hosts": host_list,
-            "ports": port_list,
-            "applications": cpe_entries,
-            "operating_system": os_info if os_info else "Unknown",
-            "cve_names": cve_list,
-            "start_time": timezone.now().isoformat()
-        }
-        # print(scan_history_data)
-
-        # Post scan history data to the /scan-history/ endpoint
-        # response = requests.post(f"http://{backend_ip}:{backend_port}/scan-history/", json=scan_history_data)
-        
-        # if response.status_code == 201:
-        #     print("Scan history data posted successfully.")
-        # else:
-        #     raise Exception(f"Failed to post scan history data: {response.status_code}, {response.text}")
+       
         
     except ET.ParseError as e:
         raise Exception(f"Error parsing report XML: {str(e)}")
 
+    scan_history_data = {
+        "vulnerabilities": vulnerability_list,
+        "hosts": host_list,
+        "ports": port_list,
+        "applications": cpe_entries,
+        "operating_system": os_info if os_info else "Unknown",
+        "cve_names": cve_list,
+        "end_time": timezone.now().isoformat(),
+    }
+    print(scan_history_data)
+    try:
+        response = requests.patch(f"http://{backend_ip}:{backend_port}/scan-history/{scan_history_id}/", json=scan_history_data)
+        response.raise_for_status() 
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Failed to patch scan history data: {e}")
     # Fetch Telegram users
     response = requests.get(f"http://{backend_ip}:{backend_port}/users/")
     response.raise_for_status()  
@@ -218,4 +229,8 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
     )
 
     for telegram_user in telegram_users:
-        bot.send_message(telegram_user['telegram_id'], message)
+        if telegram_user['language'] == 'vi':
+            translated_message = translate(message)
+            bot.send_message(telegram_user['telegram_id'], translated_message)
+        else:
+            bot.send_message(telegram_user['telegram_id'], message)

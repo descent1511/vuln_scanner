@@ -24,12 +24,12 @@ class Target(models.Model):
     target_name = models.CharField(max_length=255, blank=True)
     value = models.CharField(max_length=255)
     port_list = models.CharField(
-        max_length=36,
+        max_length=40,
         choices=PortList.choices,
         default=PortList.IANA_ASSIGNED_TCP
     )
-    target_id = models.CharField(max_length=36, primary_key=True, blank=True)
-    value_type = models.CharField(max_length=20)
+    target_id = models.CharField(max_length=40, primary_key=True, blank=True)
+    value_type = models.CharField(max_length=40)
 
 class TargetSchedule(models.Model):
     SCAN_TYPE_CHOICES = [
@@ -40,7 +40,7 @@ class TargetSchedule(models.Model):
     value = models.CharField(max_length=255)
     interval = models.IntegerField()
     last_run = models.DateTimeField(null=True, blank=True)
-    scan_type = models.CharField(max_length=20, choices=SCAN_TYPE_CHOICES)
+    scan_type = models.CharField(max_length=40, choices=SCAN_TYPE_CHOICES)
 
     def __str__(self):
         return f"{self.value} ({self.scan_type})"
@@ -50,27 +50,29 @@ class Task(models.Model):
     task_name = models.CharField(max_length=255, blank=True)
     target = models.ForeignKey(Target, on_delete=models.CASCADE)
     scan_config = models.CharField(
-        max_length=36,
+        max_length=40,
         choices=ScanConfig.choices,
         default=ScanConfig.FULL_AND_FAST
     )
-    task_id = models.CharField(max_length=36, primary_key=True, blank=True)
+    task_id = models.CharField(max_length=40, primary_key=True, blank=True)
     scanner = models.CharField(
-        max_length=36,
+        max_length=40,
         choices=Scanner.choices,
         default=Scanner.CVE
     )
 
 class ScanHistory(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='scans')
-    start_time = models.DateTimeField(null=True, blank=True)
+    start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    results = models.TextField(blank=True)
+
+    hosts = models.JSONField(default=list, blank=True)
+    ports = models.JSONField(default=list, blank=True)
     vulnerabilities = models.JSONField(default=list, blank=True)       
     applications = models.JSONField(default=list, blank=True)   
     operating_system = models.CharField(max_length=100, blank=True) 
     cve_names = models.JSONField(default=list, blank=True)    
-    scan_id = models.CharField(max_length=36, primary_key=True, blank=True)
+    scan_id = models.CharField(max_length=40, primary_key=True, blank=True)
     def __str__(self):
         return f"Scan {self.id} for Task {self.task.task_name}"
 
@@ -97,7 +99,7 @@ class SecurityAlert(models.Model):
     name = models.CharField(max_length=255) 
     ip_address = models.GenericIPAddressField()
     hostname = models.CharField(max_length=255, null=True, blank=True)  
-    port = models.CharField(max_length=10)
+    port = models.CharField(max_length=40,null=True, blank=True)
     service = models.CharField(max_length=100, default='All')
     recommendation = models.TextField()
     status = models.CharField(max_length=20, default='Unresolved')

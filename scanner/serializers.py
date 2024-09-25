@@ -77,7 +77,6 @@ class TargetScheduleSerializer(serializers.ModelSerializer):
         return representation
     
 class ScanHistorySerializer(serializers.ModelSerializer):
-    task = TaskSerializer()
     class Meta:
         model = ScanHistory
         fields = '__all__'

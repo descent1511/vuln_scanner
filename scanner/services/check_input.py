@@ -5,6 +5,7 @@ def validate_input(input_data):
         'domain_name': r'^[a-zA-Z0-9-]{1,63}\.[a-zA-Z]{2,}$',
         'ip_address': r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$',
         'hostname': r'^[a-zA-Z0-9-]{1,63}\.[a-zA-Z0-9-]{1,63}\.[a-zA-Z]{2,}$',
+        'subdomain': r'^([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,}$',
         'subnet': r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.0\/\d{1,2}$',
         'bitcoin_address': r'^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$',
         'email': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
@@ -12,6 +13,7 @@ def validate_input(input_data):
         'human_name': r'^[A-Za-z ]+$',
         'username': r'^[a-zA-Z0-9_.-]+$',
         'asn': r'^\d+$'
+        # 'subdomain': r'^([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,}$'  # Added subdomain pattern
     }
 
     for data_type, pattern in patterns.items():
