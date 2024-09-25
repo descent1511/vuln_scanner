@@ -134,7 +134,7 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
 
         for vulnerability in vulnerabilities:
             severity = vulnerability.find("threat").text
-            if severity == 'High':  # Consider only 'High' severity vulnerabilities
+            if severity == 'High': 
                 name = vulnerability.find("name").text
                 host = vulnerability.find("host").text if vulnerability.find("host") is not None else "Unknown"
                 port = vulnerability.find("port").text if vulnerability.find("port") is not None else "Unknown"
@@ -179,6 +179,7 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
     try:
         response = requests.patch(f"http://{backend_ip}:{backend_port}/scan-history/{scan_history_id}/", json=scan_history_data)
         response.raise_for_status() 
+        scan_history_data = response.json()
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"Failed to patch scan history data: {e}")
     # Fetch Telegram users
