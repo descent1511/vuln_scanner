@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Target, PortList, ScanConfig,Task, Crawler,TelegramUser
+from .models import Target, PortList, ScanConfig,Task, Crawler,TelegramUser,TargetSchedule,ScanHistory
 
 from rest_framework import serializers
 from .models import Vulnerability, SecurityAlert,Correlation
@@ -21,7 +21,7 @@ class TargetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Target
-        fields = ['target_name', 'hosts', 'port_list', 'target_id']
+        fields = '__all__'
 
 class TaskSerializer(serializers.ModelSerializer):
     scan_config = serializers.ChoiceField(choices=ScanConfig.choices)
@@ -64,3 +64,24 @@ class TelegramUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = TelegramUser
         fields = '__all__'
+
+class TargetScheduleSerializer(serializers.ModelSerializer):
+    target = TargetSerializer()
+    class Meta:
+        model = TargetSchedule
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['target'] = TargetSerializer(instance.target).data
+        return representation
+    
+class ScanHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScanHistory
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['task'] = TaskSerializer(instance.task).data
+        return representation

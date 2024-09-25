@@ -9,18 +9,17 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "5433:5432"
+
 
   redis:
     image: redis:latest
     container_name: redis_cache
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
   backend:
-    image: descent1511/vdt2_backend
+    image: descent1511/vdt2_backend:v1
     container_name: vdt2_backend
     environment:
       OPENVAS_HOST: ${OPENVAS_HOST}
@@ -37,16 +36,17 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SPIDERFOOT_IP: ${SPIDERFOOT_IP}
-      SPIDERFOOT_SCRIPT_PATH: ${SPIDERFOOT_SCRIPT_PATH}
       BACKEND_IP: backend
+      BOT_TOKEN: ${BOT_TOKEN}
+      BACKEND_PORT: 4000
     depends_on:
       - postgres
       - redis
     ports:
-      - "8000:8000" 
+      - "4000:4000" 
 
   bot:
-    image: descent1511/vdt2_bot
+    image: descent1511/vdt2_bot:v1
     container_name: vdt2_bot
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
@@ -55,7 +55,7 @@ services:
       - backend
 
   celery:
-    image: descent1511/vdt2_backend 
+    image: descent1511/vdt2_backend:v1
     container_name: celery_worker
     command: celery -A vuln_scanner worker --loglevel=info
     environment:
@@ -73,11 +73,33 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SPIDERFOOT_IP: ${SPIDERFOOT_IP}
-      SPIDERFOOT_SCRIPT_PATH: ${SPIDERFOOT_SCRIPT_PATH}
       BACKEND_IP: backend
+      BACKEND_PORT: 4000
     depends_on:
       - backend
       - redis
 
-volumes:
-  postgres_data:
+  celery-beat:
+    image: descent1511/vdt2_backend:v1
+    container_name: celery_beat
+    command: celery -A vuln_scanner beat --loglevel=info
+    environment:
+      OPENVAS_HOST: ${OPENVAS_HOST}
+      SSH_USERNAME: ${SSH_USERNAME}
+      SSH_PASSWORD: ${SSH_PASSWORD}
+      GMP_USERNAME: ${GMP_USERNAME}
+      GMP_PASSWORD: ${GMP_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SPIDERFOOT_IP: ${SPIDERFOOT_IP}
+      BACKEND_IP: backend
+      BACKEND_PORT: 4000
+    depends_on:
+      - backend
+      - redis
