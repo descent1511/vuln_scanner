@@ -65,7 +65,7 @@ def wait_for_task_completion(task_id):
 
     # Fetch the report ID once the task completes
     report_id = get_report_id(task_id, ssh_client, gmp_username, gmp_password)
-    send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password, task_id, scan_history_id)
+    send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password, task_id, scan_history_id,task_status)
     
     ssh_client.close()  # Close the SSH connection
 
@@ -92,7 +92,7 @@ def get_report_id(task_id, ssh_client, gmp_username, gmp_password):
     return report_id
 
 # Function to extract vulnerabilities from the report and send alerts via Telegram
-def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password, task_id, scan_history_id):
+def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_password, task_id, scan_history_id ,task_status):
     backend_ip = os.getenv('BACKEND_IP')
     backend_port = os.getenv('BACKEND_PORT', '8000')
     
@@ -112,8 +112,7 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
         root = ET.fromstring(report_content_output)
         vulnerabilities = root.findall('.//results/result')
         
-        if not vulnerabilities:
-            raise Exception("No vulnerabilities found in the report.")
+      
             
         cpe_entries = []
         os_info = None
@@ -181,6 +180,7 @@ def send_vulnerabilities_to_telegram(report_id, ssh_client, gmp_username, gmp_pa
         "operating_system": os_info if os_info else "Unknown",
         "cve_names": cve_list,
         "end_time": timezone.now().isoformat(),
+        "status": task_status
     }
     print(scan_history_data)
     try:

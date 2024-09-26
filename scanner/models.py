@@ -78,7 +78,7 @@ class ScanHistory(models.Model):
     operating_system = models.CharField(max_length=100, blank=True)  # OS of the scanned target
     cve_names = models.JSONField(default=list, blank=True)  # List of CVE names
     scan_id = models.CharField(max_length=40, primary_key=True, blank=True)  # Unique scan ID
-
+    status = models.CharField(max_length=20, default='Running')  # Scan status
     def __str__(self):
         return f"Scan {self.id} for Task {self.task.task_name}"
 

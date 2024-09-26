@@ -258,6 +258,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response({'error': f'Error creating task: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
+        scan_history = ScanHistory.objects.filter(task=task).order_by('-start_time').first()
+        if scan_history and scan_history.status == 'Running':
+            return Response({'status': "An existing scan is already running for this target."}, status=status.HTTP_400_BAD_REQUEST)
         # Start the created task
         try:
             start_task(task.task_id)
@@ -324,6 +327,9 @@ class CrawlerViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response({'error': f'Error creating target: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
+        existing_crawler = Crawler.objects.filter(target=target.target_id).order_by('-start_time').first()
+        if existing_crawler and existing_crawler.status == 'Running':
+            return Response({'status': "An existing crawler is already running for this target."}, status=status.HTTP_400_BAD_REQUEST)
         # Prepare data for crawler creation
         post_data = {
             "scanname": target_value,
