@@ -303,29 +303,26 @@ class CrawlerViewSet(viewsets.ModelViewSet):
         if validation_result == "Invalid input":
             return Response({"error": "Invalid input"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Retrieve or create target
-        try:
-            target = Target.objects.get(value=target_value)
-            target_id = target.target_id
-        except Target.DoesNotExist:
+        target = Target.objects.filter(value=target_value).first()
 
-            backend_ip = os.getenv('BACKEND_IP')
-            backend_port = os.getenv('BACKEND_PORT', '8000')
-            targets_url = f"http://{backend_ip}:{backend_port}/targets/"
-
-            target_payload = {
-                "value": target_value,
-            }
-
+        # Create a new target if it doesn't exist
+        if not target:
+            port_list = PortList.IANA_ASSIGNED_TCP
+            target_name = target_value + '-' + port_list
             try:
-                response = requests.post(targets_url, json=target_payload)
-                response.raise_for_status()
-                target_data = response.json()
-                target_id = target_data.get('target_id')
-                if not target_id:
-                    return Response({"error": "Failed to create target."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except requests.RequestException as e:
-                return Response({"error": f"Failed to create target via API: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                target_id = create_target(target_name, target_value, port_list)
+                target_data = {
+                    'value': target_value,
+                    'port_list': port_list,
+                    'target_name': target_name,
+                    'target_id': target_id,
+                    'value_type': validation_result,
+                }
+                target_serializer = TargetSerializer(data=target_data)
+                target_serializer.is_valid(raise_exception=True)
+                target = target_serializer.save()
+            except Exception as e:
+                return Response({'error': f'Error creating target: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Prepare data for crawler creation
         post_data = {
@@ -342,7 +339,7 @@ class CrawlerViewSet(viewsets.ModelViewSet):
             return Response({"error": f"Failed to create scan: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         crawler_data = {
-            'target': target_id,
+            'target': target.target_id,
             'start_time': now(),
             'status': 'Running',
             'crawler_id': scan_id,

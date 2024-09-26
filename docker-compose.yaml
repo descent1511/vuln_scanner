@@ -51,6 +51,7 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       BACKEND_IP: backend
+      BACKEND_PORT: 4000
     depends_on:
       - backend
 
@@ -79,27 +80,27 @@ services:
       - backend
       - redis
 
-  celery-beat:
-    image: descent1511/vdt2_backend:v1
-    container_name: celery_beat
-    command: celery -A vuln_scanner beat --loglevel=info
-    environment:
-      OPENVAS_HOST: ${OPENVAS_HOST}
-      SSH_USERNAME: ${SSH_USERNAME}
-      SSH_PASSWORD: ${SSH_PASSWORD}
-      GMP_USERNAME: ${GMP_USERNAME}
-      GMP_PASSWORD: ${GMP_PASSWORD}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: postgres
-      DB_PORT: ${DB_PORT}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      SPIDERFOOT_IP: ${SPIDERFOOT_IP}
-      BACKEND_IP: backend
-      BACKEND_PORT: 4000
-    depends_on:
-      - backend
-      - redis
+  # celery-beat:
+  #   image: descent1511/vdt2_backend:v1
+  #   container_name: celery_beat
+  #   command: celery -A vuln_scanner beat --loglevel=info
+  #   environment:
+  #     OPENVAS_HOST: ${OPENVAS_HOST}
+  #     SSH_USERNAME: ${SSH_USERNAME}
+  #     SSH_PASSWORD: ${SSH_PASSWORD}
+  #     GMP_USERNAME: ${GMP_USERNAME}
+  #     GMP_PASSWORD: ${GMP_PASSWORD}
+  #     OPENAI_API_KEY: ${OPENAI_API_KEY}
+  #     DB_NAME: ${DB_NAME}
+  #     DB_USER: ${DB_USER}
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #     DB_HOST: postgres
+  #     DB_PORT: ${DB_PORT}
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     SPIDERFOOT_IP: ${SPIDERFOOT_IP}
+  #     BACKEND_IP: backend
+  #     BACKEND_PORT: 4000
+  #   depends_on:
+  #     - backend
+  #     - redis

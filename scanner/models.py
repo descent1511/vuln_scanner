@@ -113,7 +113,7 @@ class SecurityAlert(models.Model):
     notified = models.BooleanField(default=False)  # Notification status
     notification_sent_at = models.DateTimeField(null=True, blank=True)  # Time of notification
     notification_channel = models.CharField(max_length=50, default='Telegram')  # Notification channel
-    owner = models.CharField(max_length=100, default='Viettel Cloud Security Team')  # Owner of the alert
+    owner = models.CharField(max_length=100, default='Cloud Security Team')  # Owner of the alert
     original_threat = models.CharField(max_length=50, null=True, blank=True)  # Original threat type
     original_severity = models.CharField(max_length=50, null=True, blank=True)  # Original severity
     modification_time = models.DateTimeField(null=True, blank=True)  # Last modification time
