@@ -124,10 +124,10 @@ def wait_for_crawler_complete(scan_id):
                     message = (
                         f"🛡️ **Thông báo từ SpiderFoot**\n\n"
                         f"**ID:** `{correlation_id}`\n\n"
-                        f"**Tiêu đề:** *{headline}*\n\n"
-                        f"**Mức độ:** `{severity}`\n\n"
+                        f"**Tiêu đề:** *{translate(headline)}*\n\n"
+                        f"**Mức độ:** `{translate(severity)}`\n\n"
                         f"**Mô tả:**\n"
-                        f"> {description}\n\n"
+                        f"> {translate(description)}\n\n"
                         f"---\n"
                     )
                 else:
