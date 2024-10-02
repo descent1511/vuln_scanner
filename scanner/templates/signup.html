@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Cloud Marketplace</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url("{% static 'background.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+        }
+        .register-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .register-container h3 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-control {
+            border-radius: 20px;
+        }
+        .btn-primary {
+            width: 100%;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="register-container">
+    <h3>Create an Account</h3>
+    <form id="registerForm">
+        <div class="form-group">
+            <input type="username" class="form-control" id="username" placeholder="Username" required>
+        </div>
+        <div class="form-group">
+            <input type="email" class="form-control" id="email" placeholder="Email" required>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="password" placeholder="Password" required>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Register</button>
+    </form>
+    <div class="text-center mt-3">
+        <a href="/login">Already have an account? Sign in</a>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- JavaScript to handle registration -->
+<script>
+    document.getElementById('registerForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Ngăn không reload lại trang
+
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (password !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
+        }
+
+        fetch('/auth/users/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                alert('Registration successful! You can now log in.');
+                window.location.href = '/login';
+            } else {
+                // alert('Registration failed. Please check your details.');
+                let errorMessage = '';
+                if (data.username) {
+                    errorMessage += `Username: ${data.username.join(', ')}\n`;
+                }
+                if (data.email) {
+                    errorMessage += `Email: ${data.email.join(', ')}\n`;
+                }
+                if (data.password) {
+                    errorMessage += `Password: ${data.password.join(', ')}\n`;
+                }
+                if (!errorMessage) {
+                    errorMessage = 'Registration failed. Please check your details.';
+                }
+                alert(errorMessage);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again later.');
+        });
+    });
+</script>
+</body>
+</html>
