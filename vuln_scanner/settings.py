@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-8ffsf(bp3fm@05-42_rj)_abpsxy*&)pwe3027&gmgc7)njkop
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['backend', 'localhost', '127.0.0.1', '171.254.93.233'] 
+# ALLOWED_HOSTS = ['backend', 'localhost', '127.0.0.1', '171.254.93.233','171.254.94.194'] 
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,9 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'scanner',
     'drf_yasg',
-    'django_celery_beat'
+    'django_celery_beat',
+    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -79,6 +82,29 @@ SWAGGER_SETTINGS = {
     }
 }
 
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+}
 WSGI_APPLICATION = 'vuln_scanner.wsgi.application'
 
 
@@ -120,8 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 USE_I18N = True
 
@@ -131,8 +156,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -149,8 +174,11 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Ho_Chi_Minh'
 
 CELERY_BEAT_SCHEDULE = {
-    'run-schedule-task': {
-        'task': 'scanner.tasks.schedule_task.check_targets',
-        'schedule': timedelta(seconds=10),  
+    'run-update-task': {
+        'task': 'scanner.tasks.openvas_task.update_and_fetch_cve_data',
+        'schedule': timedelta(hours=1),  
     }
 }
+
+
+

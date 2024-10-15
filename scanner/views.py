@@ -1,4 +1,4 @@
-import time
+
 from .serializers import (TargetSerializer, TaskSerializer, VulnerabilitySerializer, SecurityAlertSerializer,
                           CrawlerSerializer, CorrelationSerializer, TelegramUserSerializer, TargetScheduleSerializer,
                           ScanHistorySerializer)
@@ -22,17 +22,50 @@ from django_celery_beat.models import PeriodicTask, IntervalSchedule  # For peri
 import uuid
 from django.shortcuts import render
 
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import IsAuthenticated,AllowAny
+
+class AllowAnyPermission(AllowAny):
+    def has_permission(self, request, view):
+        return True
+
+class TokenVerifyView(APIView):
+    authentication_classes = [TokenAuthentication]  
+    permission_classes = [IsAuthenticated] 
+
+    def post(self, request, *args, **kwargs):
+        auth_header = request.headers.get('Authorization')  
+        
+        # Kiểm tra nếu header có chứa token
+        if auth_header and auth_header.startswith('Token '):
+            global token 
+            token = auth_header.split(' ')[1]  # Lấy token từ header
+
+        # print('Authorization header:', request.headers.get('Authorization'))  # In ra header để kiểm tra
+        user = request.user
+        
+        # print('ok')
+
+        if user.is_authenticated:
+            return Response({"detail": "Token is valid", "user": user.username}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
 
 # View to render the threat intelligence scan page
 def threat_intelligence_view(request):
     return render(request, 'scan.html')
 
+def login_view(request):
+    return render(request, 'login.html')
 
+def signup_view(request):
+    return render(request, 'signup.html')
 # TargetViewSet handles operations related to scan targets
 class TargetViewSet(viewsets.ModelViewSet):
     queryset = Target.objects.all()
     serializer_class = TargetSerializer  
-
+    permission_classes = [IsAuthenticated]
     # Create a new target
     def create(self, request, *args, **kwargs):
         input_data = request.data
@@ -110,6 +143,7 @@ class TargetViewSet(viewsets.ModelViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
+    permission_classes = [IsAuthenticated]
     # Create a new task
     def create(self, request, *args, **kwargs):
         input_data = request.data
@@ -285,17 +319,17 @@ class TaskViewSet(viewsets.ModelViewSet):
 class VulnerabilityViewSet(viewsets.ModelViewSet):
     serializer_class = VulnerabilitySerializer
     queryset = Vulnerability.objects.all()
-
+    permission_classes = [IsAuthenticated]
 # SecurityAlertViewSet manages alerts generated during scans
 class SecurityAlertViewSet(viewsets.ModelViewSet):
     serializer_class = SecurityAlertSerializer
     queryset = SecurityAlert.objects.all()
-
+    permission_classes = [IsAuthenticated]
 # CrawlerViewSet manages the SpiderFoot crawlers
 class CrawlerViewSet(viewsets.ModelViewSet):
     queryset = Crawler.objects.all()
     serializer_class = CrawlerSerializer
-
+    permission_classes = [IsAuthenticated]
     # Custom create method for creating a new crawler
     def create(self, request, *args, **kwargs):
         target_value = request.data.get('value')
@@ -363,12 +397,12 @@ class CrawlerViewSet(viewsets.ModelViewSet):
 class CorrelationsViewSet(viewsets.ModelViewSet):
     queryset = Correlation.objects.all()
     serializer_class = CorrelationSerializer
-
+    permission_classes = [IsAuthenticated]
 # TelegramUserViewSet manages Telegram users interacting with the system
 class TelegramUserViewSet(viewsets.ModelViewSet):
     queryset = TelegramUser.objects.all()
     serializer_class = TelegramUserSerializer
-
+    permission_classes = [AllowAnyPermission]
     # Custom action to update a Telegram user's language preference
     @action(detail=True, methods=['post'])
     def update_lang(self, request, *args, **kwargs):
@@ -388,7 +422,7 @@ class TelegramUserViewSet(viewsets.ModelViewSet):
 class ScheduleTargetViewSet(viewsets.ModelViewSet):
     queryset = TargetSchedule.objects.all()
     serializer_class = TargetScheduleSerializer
-
+    permission_classes = [IsAuthenticated]
     # Create a new target schedule
     def create(self, request, *args, **kwargs):
       
@@ -445,5 +479,7 @@ class ScheduleTargetViewSet(viewsets.ModelViewSet):
     
 # ScanHistoryViewSet manages the scan history of targets
 class ScanHistoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = ScanHistory.objects.all()
     serializer_class = ScanHistorySerializer
+    
