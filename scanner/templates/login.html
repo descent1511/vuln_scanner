@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Cloud Marketplace</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url("{% static 'background.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .login-container h3 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-control {
+            border-radius: 20px;
+        }
+        .btn-primary {
+            width: 100%;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h3>Sign in</h3>
+    <form id="loginForm">
+        <div class="form-group">
+            <input type="username" class="form-control" id="username" placeholder="Username" required>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="password" placeholder="Password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+    </form>
+    <div class="text-center mt-3">
+        <a href="/signup">Create an account</a>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- JavaScript to handle login -->
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Ngăn không reload lại trang
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        fetch('/auth/token/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.auth_token) {
+                // Lưu token vào localStorage (hoặc sessionStorage) để sử dụng sau
+                localStorage.setItem('authToken', data.auth_token);
+                alert('Login successful!');
+                window.location.href = '/threat-intelligence'; // Điều hướng về trang chính sau khi đăng nhập
+            } else {
+                alert('Login failed. Please check your credentials.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again later.');
+        });
+    });
+</script>
+</body>
+</html>

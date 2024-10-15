@@ -41,5 +41,20 @@ class TelegramBot:
                 self.bot.send_message(chat_id=message.chat.id, text="Invalid language code. Supported languages: " + ", ".join(LANGUAGES.keys()))
 
     # Method to send a message to a specific chat
-    def send_message(self, chat_id, message):
-        self.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')  # Send message in Markdown format
+    def send_message(self, chat_id, message=None, pdf_path=None):
+        print(f"Opening PDF file at: {pdf_path}")
+        if message and pdf_path:
+
+            with open(pdf_path, 'rb') as pdf_file:
+                self.bot.send_document(chat_id=chat_id, document=pdf_file, caption=message, parse_mode='Markdown')
+        elif message:
+            # Case when only a message is provided
+            self.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        elif pdf_path:
+            # Case when only a PDF is provided
+            with open(pdf_path, 'rb') as pdf_file:
+                self.bot.send_document(chat_id=chat_id, document=pdf_file)
+        else:
+            # Case when neither a message nor a PDF is provided
+            print("No message or PDF provided to send.")
+

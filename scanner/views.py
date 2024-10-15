@@ -1,4 +1,4 @@
-import time
+
 from .serializers import (TargetSerializer, TaskSerializer, VulnerabilitySerializer, SecurityAlertSerializer,
                           CrawlerSerializer, CorrelationSerializer, TelegramUserSerializer, TargetScheduleSerializer,
                           ScanHistorySerializer)
@@ -22,17 +22,50 @@ from django_celery_beat.models import PeriodicTask, IntervalSchedule  # For peri
 import uuid
 from django.shortcuts import render
 
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import IsAuthenticated,AllowAny
+
+class AllowAnyPermission(AllowAny):
+    def has_permission(self, request, view):
+        return True
+
+class TokenVerifyView(APIView):
+    authentication_classes = [TokenAuthentication]  
+    permission_classes = [IsAuthenticated] 
+
+    def post(self, request, *args, **kwargs):
+        auth_header = request.headers.get('Authorization')  
+        
+        # Kiểm tra nếu header có chứa token
+        if auth_header and auth_header.startswith('Token '):
+            global token 
+            token = auth_header.split(' ')[1]  # Lấy token từ header
+
+        # print('Authorization header:', request.headers.get('Authorization'))  # In ra header để kiểm tra
+        user = request.user
+        
+        # print('ok')
+
+        if user.is_authenticated:
+            return Response({"detail": "Token is valid", "user": user.username}, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Invalid token."}, status=status.HTTP_401_UNAUTHORIZED)
 
 # View to render the threat intelligence scan page
 def threat_intelligence_view(request):
     return render(request, 'scan.html')
 
+def login_view(request):
+    return render(request, 'login.html')
 
+def signup_view(request):
+    return render(request, 'signup.html')
 # TargetViewSet handles operations related to scan targets
 class TargetViewSet(viewsets.ModelViewSet):
     queryset = Target.objects.all()
     serializer_class = TargetSerializer  
-
+    permission_classes = [IsAuthenticated]
     # Create a new target
     def create(self, request, *args, **kwargs):
         input_data = request.data
@@ -110,6 +143,7 @@ class TargetViewSet(viewsets.ModelViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
+    permission_classes = [IsAuthenticated]
     # Create a new task
     def create(self, request, *args, **kwargs):
         input_data = request.data
@@ -258,6 +292,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response({'error': f'Error creating task: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
+        scan_history = ScanHistory.objects.filter(task=task).order_by('-start_time').first()
+        if scan_history and scan_history.status == 'Running':
+            return Response({'status': "An existing scan is already running for this target."}, status=status.HTTP_400_BAD_REQUEST)
         # Start the created task
         try:
             start_task(task.task_id)
@@ -282,17 +319,17 @@ class TaskViewSet(viewsets.ModelViewSet):
 class VulnerabilityViewSet(viewsets.ModelViewSet):
     serializer_class = VulnerabilitySerializer
     queryset = Vulnerability.objects.all()
-
+    permission_classes = [IsAuthenticated]
 # SecurityAlertViewSet manages alerts generated during scans
 class SecurityAlertViewSet(viewsets.ModelViewSet):
     serializer_class = SecurityAlertSerializer
     queryset = SecurityAlert.objects.all()
-
+    permission_classes = [IsAuthenticated]
 # CrawlerViewSet manages the SpiderFoot crawlers
 class CrawlerViewSet(viewsets.ModelViewSet):
     queryset = Crawler.objects.all()
     serializer_class = CrawlerSerializer
-
+    permission_classes = [IsAuthenticated]
     # Custom create method for creating a new crawler
     def create(self, request, *args, **kwargs):
         target_value = request.data.get('value')
@@ -303,30 +340,30 @@ class CrawlerViewSet(viewsets.ModelViewSet):
         if validation_result == "Invalid input":
             return Response({"error": "Invalid input"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Retrieve or create target
-        try:
-            target = Target.objects.get(value=target_value)
-            target_id = target.target_id
-        except Target.DoesNotExist:
+        target = Target.objects.filter(value=target_value).first()
 
-            backend_ip = os.getenv('BACKEND_IP')
-            backend_port = os.getenv('BACKEND_PORT', '8000')
-            targets_url = f"http://{backend_ip}:{backend_port}/targets/"
-
-            target_payload = {
-                "value": target_value,
-            }
-
+        # Create a new target if it doesn't exist
+        if not target:
+            port_list = PortList.IANA_ASSIGNED_TCP
+            target_name = target_value + '-' + port_list
             try:
-                response = requests.post(targets_url, json=target_payload)
-                response.raise_for_status()
-                target_data = response.json()
-                target_id = target_data.get('target_id')
-                if not target_id:
-                    return Response({"error": "Failed to create target."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except requests.RequestException as e:
-                return Response({"error": f"Failed to create target via API: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                target_id = create_target(target_name, target_value, port_list)
+                target_data = {
+                    'value': target_value,
+                    'port_list': port_list,
+                    'target_name': target_name,
+                    'target_id': target_id,
+                    'value_type': validation_result,
+                }
+                target_serializer = TargetSerializer(data=target_data)
+                target_serializer.is_valid(raise_exception=True)
+                target = target_serializer.save()
+            except Exception as e:
+                return Response({'error': f'Error creating target: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
+        existing_crawler = Crawler.objects.filter(target=target.target_id).order_by('-start_time').first()
+        if existing_crawler and existing_crawler.status == 'Running':
+            return Response({'status': "An existing crawler is already running for this target."}, status=status.HTTP_400_BAD_REQUEST)
         # Prepare data for crawler creation
         post_data = {
             "scanname": target_value,
@@ -342,7 +379,7 @@ class CrawlerViewSet(viewsets.ModelViewSet):
             return Response({"error": f"Failed to create scan: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         crawler_data = {
-            'target': target_id,
+            'target': target.target_id,
             'start_time': now(),
             'status': 'Running',
             'crawler_id': scan_id,
@@ -360,12 +397,12 @@ class CrawlerViewSet(viewsets.ModelViewSet):
 class CorrelationsViewSet(viewsets.ModelViewSet):
     queryset = Correlation.objects.all()
     serializer_class = CorrelationSerializer
-
+    permission_classes = [IsAuthenticated]
 # TelegramUserViewSet manages Telegram users interacting with the system
 class TelegramUserViewSet(viewsets.ModelViewSet):
     queryset = TelegramUser.objects.all()
     serializer_class = TelegramUserSerializer
-
+    permission_classes = [AllowAnyPermission]
     # Custom action to update a Telegram user's language preference
     @action(detail=True, methods=['post'])
     def update_lang(self, request, *args, **kwargs):
@@ -385,7 +422,7 @@ class TelegramUserViewSet(viewsets.ModelViewSet):
 class ScheduleTargetViewSet(viewsets.ModelViewSet):
     queryset = TargetSchedule.objects.all()
     serializer_class = TargetScheduleSerializer
-
+    permission_classes = [IsAuthenticated]
     # Create a new target schedule
     def create(self, request, *args, **kwargs):
       
@@ -442,5 +479,7 @@ class ScheduleTargetViewSet(viewsets.ModelViewSet):
     
 # ScanHistoryViewSet manages the scan history of targets
 class ScanHistoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = ScanHistory.objects.all()
     serializer_class = ScanHistorySerializer
+    

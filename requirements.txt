@@ -131,3 +131,4 @@ wsproto==1.2.0
 XlsxWriter==3.2.0
 yarl==1.9.4
 zc.lockfile==3.0.post1
+djoser

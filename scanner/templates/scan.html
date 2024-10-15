@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viettel Cloud Marketplace</title>
+    <title>Cloud Marketplace</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -17,20 +17,8 @@
             padding: 20px;
             transition: all 0.3s ease;
         }
-        .sidebar h5 {
-            font-size: 18px;
-            font-weight: bold;
-        }
         .card-container {
             margin-top: 20px;
-        }
-        .card {
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            border: none;
-        }
-        .card-title {
-            font-size: 18px;
-            font-weight: bold;
         }
         .navbar {
             background-color: white;
@@ -40,51 +28,28 @@
             border-radius: 20px;
             border: 1px solid #ccc;
         }
-        .category-heading {
-            font-weight: bold;
-            margin-left: 15px;
-        }
-        /* Toggle Sidebar */
         .hidden-sidebar {
             transform: translateX(-250px);
         }
-        .form-container {
-            margin-top: 20px;
-        }
-        /* Loading Spinner */
         .d-none {
             display: none;
-        }
-        #loadingSpinner {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
         }
     </style>
 </head>
 <body>
 
-<!-- Loading Spinner -->
-<div id="loadingSpinner" class="d-none">
-    <div class="spinner-border text-primary" role="status">
-        <span class="sr-only">Loading...</span>
-    </div>
-</div>
-
 <!-- Navigation bar -->
 <nav class="navbar navbar-light">
     <button class="btn btn-primary" id="toggleSidebarBtn">☰</button>
     <a class="navbar-brand ml-4" href="#">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Logo_Viettel_from_7_January_2021_Slogan.svg" height="30" alt="Viettel Cloud">
+        <img src="https://w7.pngwing.com/pngs/922/879/png-transparent-vulnerability-scanner-vulnerability-assessment-computer-security-security-as-a-service-others-text-orange-logo-thumbnail.png" height="30" alt="Cloud">
     </a>
     <form class="form-inline">
         <input class="form-control mr-sm-2 search-bar" type="search" placeholder="Services, products, docs..." aria-label="Search">
     </form>
     <div class="ml-auto">
         <button class="btn btn-light">EN</button>
-        <button class="btn btn-light">Sign in</button>
+        <button class="btn btn-light" id="authButton">Sign in</button>
     </div>
 </nav>
 
@@ -92,7 +57,7 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-2 sidebar" id="sidebar">
+        <div class="col-md-2 sidebar d-none" id="sidebar">
             <h5>Marketplace</h5>
             <div class="mt-4">
                 <h6>Category</h6>
@@ -105,74 +70,130 @@
         </div>
 
         <!-- Main content -->
-        <div class="col-md-10">
-            <div id="mainContent" class="d-none">
-                <div class="d-flex justify-content-between mt-4">
-                    <h5 class="category-heading">THREAT INTELLIGENCE</h5>
-                </div>
-
-                <!-- Options for Threat Intelligence -->
-                <div class="row card-container">
-                    <!-- Crawler Information Option -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Crawler Information</h5>
-                                <button class="btn btn-primary" id="crawlerInfoBtn">Start Crawler Information</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Scan Vulnerability Option -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Scan Vulnerability</h5>
-                                <button class="btn btn-primary" id="scanVulnerabilityBtn">Start Scan Vulnerability</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Schedule Scan or Crawler Option -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Schedule Scan/Crawler</h5>
-                                <button class="btn btn-primary" id="scheduleBtn">Set Schedule</button>
-                            </div>
+        <div class="col-md-10 d-none" id="mainContent">
+            <div class="d-flex justify-content-between mt-4">
+                <h5 class="category-heading">THREAT INTELLIGENCE</h5>
+            </div>
+            <button class="btn btn-info" id="updateBtn">Sync Feed</button>
+            <div id="loadingUpdateSpinner" class="spinner-border text-primary d-none" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+            <!-- Options for Threat Intelligence -->
+            <div class="row card-container">
+                <!-- Crawler Information Option -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Crawler Information</h5>
+                            <button class="btn btn-primary" id="crawlerInfoBtn">Start Crawler Information</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Crawler Form -->
-                <div class="form-container d-none" id="crawlerFormContainer">
-                    <label for="crawlerTarget">Enter Target for Crawler:</label>
-                    <input type="text" class="form-control" id="crawlerTarget" placeholder="Enter target for Crawler Information">
-                    <button class="btn btn-success mt-3" id="submitCrawlerBtn">Submit Crawler</button>
+                <!-- Scan Vulnerability Option -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Scan Vulnerability</h5>
+                            <button class="btn btn-primary" id="scanVulnerabilityBtn">Start Scan Vulnerability</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Scan Form -->
-                <div class="form-container d-none" id="scanFormContainer">
-                    <label for="scanTarget">Enter Target for Vulnerability Scan:</label>
-                    <input type="text" class="form-control" id="scanTarget" placeholder="Enter target for Vulnerability Scan">
-                    <button class="btn btn-success mt-3" id="submitScanBtn">Submit Scan</button>
+                <!-- Schedule Scan or Crawler Option -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Schedule Scan/Crawler</h5>
+                            <button class="btn btn-primary" id="scheduleBtn">Set Schedule</button>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Schedule Form -->
-                <div class="form-container d-none" id="scheduleFormContainer">
-                    <label for="scheduleTarget">Enter Target for Scheduling:</label>
-                    <input type="text" class="form-control" id="scheduleTarget" placeholder="Enter target for scheduling">
+            <!-- Crawler Form -->
+            <div class="form-container d-none" id="crawlerFormContainer">
+                <label for="crawlerTarget">Enter Target for Crawler:</label>
+                <input type="text" class="form-control" id="crawlerTarget" placeholder="Enter target for Crawler Information">
+                <button class="btn btn-success mt-3" id="submitCrawlerBtn">Submit Crawler</button>
+            </div>
 
-                    <label for="scanType" class="mt-3">Select Scan Type:</label>
-                    <select class="form-control" id="scanType">
-                        <option value="spiderfoot">SpiderFoot</option>
-                        <option value="openvas">OpenVAS</option>
-                    </select>
+            <!-- Scan Form -->
+            <div class="form-container d-none" id="scanFormContainer">
+                <label for="scanTarget">Enter Target for Vulnerability Scan:</label>
+                <input type="text" class="form-control" id="scanTarget" placeholder="Enter target for Vulnerability Scan">
+                <button class="btn btn-success mt-3" id="submitScanBtn">Submit Scan</button>
+            </div>
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+            <!-- Schedule Form -->
+            <div class="form-container d-none" id="scheduleFormContainer">
+                <label for="scheduleTarget">Enter Target for Scheduling:</label>
+                <input type="text" class="form-control" id="scheduleTarget" placeholder="Enter target for scheduling">
+                <label for="scanType" class="mt-3">Select Scan Type:</label>
+                <select class="form-control" id="scanType">
+                    <option value="spiderfoot">SpiderFoot</option>
+                    <option value="openvas">OpenVAS</option>
+                </select>
+                <label for="scheduleTime" class="mt-3">Schedule time (in seconds):</label>
+                <input type="number" class="form-control" id="scheduleTime" placeholder="Set time in seconds">
+                <button class="btn btn-success mt-3" id="submitScheduleBtn">Submit Schedule</button>
+            </div>
 
-                    <label for="scheduleTime" class="mt-3">Schedule time (in seconds):</label>
-                    <input type="number" class="form-control" id="scheduleTime" placeholder="Set time in seconds">
-
-                    <button class="btn btn-success mt-3" id="submitScheduleBtn">Submit Schedule</button>
+            <!-- History Section for Crawler and Scan -->
+            <div class="row card-container mt-5">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">History</h5>
+                            <ul class="nav nav-tabs" id="historyTabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="crawler-tab" data-toggle="tab" href="#crawlerHistory" role="tab" aria-controls="crawlerHistory" aria-selected="true">Crawler History</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="scan-tab" data-toggle="tab" href="#scanHistory" role="tab" aria-controls="scanHistory" aria-selected="false">Scan History</a>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="historyContent">
+                                <div class="tab-pane fade show active" id="crawlerHistory" role="tabpanel" aria-labelledby="crawler-tab">
+                                    <!-- Crawler history content -->
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Target Value</th>
+                                                <th>Status</th>
+                                                <th>Start Time</th>
+                                                <th>End Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="crawlerHistoryBody">
+                                            <!-- Crawler history items populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="tab-pane fade" id="scanHistory" role="tabpanel" aria-labelledby="scan-tab">
+                                    <!-- Scan history content -->
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Target Value</th>
+                                                <th>Status</th>
+                                                <th>Start Time</th>
+                                                <th>End Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="scanHistoryBody">
+                                            <!-- Scan history items populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -186,8 +207,51 @@
 
 <!-- Custom JavaScript for Sidebar Toggle and Threat Intelligence Options -->
 <script>
-    const sidebar = document.getElementById('sidebar');
+    document.addEventListener('DOMContentLoaded', function () {
+        const authButton = document.getElementById('authButton');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const token = localStorage.getItem('authToken');
+
+        if (token) {
+            // Verify token with the API
+            fetch('/auth/token/verify/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${token}`
+                },
+                body: JSON.stringify({ token: token })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Token is valid
+                    sidebar.classList.remove('d-none');
+                    mainContent.classList.remove('d-none');
+                    authButton.textContent = 'Log out';
+
+                    // Log out functionality
+                    authButton.addEventListener('click', function() {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/login';  // Redirect to login page
+                    });
+                } else {
+                    // Token is invalid, redirect to login
+                    window.location.href = '/login';
+                }
+            })
+            .catch(error => {
+                console.error('Error verifying token:', error);
+                window.location.href = '/login';  // Redirect to login on error
+            });
+        } else {
+            // No token, redirect to login
+            window.location.href = '/login';
+        }
+    });
+    const token = localStorage.getItem('authToken');
     const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+    const sidebar = document.getElementById('sidebar');
     const threatIntelligenceLink = document.getElementById('threatIntelligenceLink');
     const mainContent = document.getElementById('mainContent');
     const crawlerInfoBtn = document.getElementById('crawlerInfoBtn');
@@ -208,7 +272,7 @@
     function hideLoading() {
         loadingSpinner.classList.add('d-none');
     }
-
+    
     toggleSidebarBtn.addEventListener('click', function () {
         sidebar.classList.toggle('hidden-sidebar');
     });
@@ -217,7 +281,6 @@
         mainContent.classList.remove('d-none');
         hideAllForms();
     });
-
     function hideAllForms() {
         crawlerFormContainer.classList.add('d-none');
         scanFormContainer.classList.add('d-none');
@@ -238,6 +301,19 @@
         hideAllForms();
         scheduleFormContainer.classList.remove('d-none');
     });
+    document.getElementById('updateBtn').addEventListener('click', function() {
+        const loadingUpdateSpinner = document.getElementById('loadingUpdateSpinner');
+
+        // Hiện spinner
+        loadingUpdateSpinner.classList.remove('d-none');
+
+        // Sau 10 giây ẩn spinner
+        setTimeout(function() {
+            loadingUpdateSpinner.classList.add('d-none');
+            alert('Update completed successfully!');
+        }, 10000); 
+    });
+
 
     submitCrawlerBtn.onclick = function () {
         const target = document.getElementById('crawlerTarget').value;
@@ -249,7 +325,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'Authorization': `Token ${token}`
             },
             body: JSON.stringify({ value: target })
         })
@@ -282,7 +358,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'Authorization': `Token ${token}`
             },
             body: JSON.stringify({
                 value: target,
@@ -323,7 +399,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'Authorization': `Token ${token}`
             },
             body: JSON.stringify({
                 value: targetValue,
@@ -349,6 +425,56 @@
             submitScheduleBtn.textContent = "Submit Schedule";
         });
     };
+
+    function fetchCrawlerHistory() {
+        fetch('/crawlers/', {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const historyBody = document.getElementById('crawlerHistoryBody');
+            historyBody.innerHTML = '';  // Clear existing entries
+            data.forEach(item => {
+                historyBody.innerHTML += `
+                    <tr>
+                        <td>${item.target.value}</td>
+                        <td>${item.status}</td>
+                        <td>${item.start_time}</td>
+                        <td>${item.end_time}</td>
+                    </tr>
+                `;
+            });
+        });
+    }
+
+    function fetchScanHistory() {
+        fetch('/scan-history/', {
+            headers: {
+                Authorization: `Token ${token}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const historyBody = document.getElementById('scanHistoryBody');
+            historyBody.innerHTML = '';  // Clear existing entries
+            data.forEach(item => {
+                historyBody.innerHTML += `
+                    <tr>
+                        <td>${item.task.target.value}</td>
+                        <td>${item.status}</td>
+                        <td>${item.start_time}</td>
+                        <td>${item.end_time}</td>
+                    </tr>
+                `;
+            });
+        });
+    }
+
+    document.getElementById('crawler-tab').addEventListener('click', fetchCrawlerHistory);
+    document.getElementById('scan-tab').addEventListener('click', fetchScanHistory);
 </script>
+
 </body>
 </html>

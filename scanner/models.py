@@ -78,7 +78,7 @@ class ScanHistory(models.Model):
     operating_system = models.CharField(max_length=100, blank=True)  # OS of the scanned target
     cve_names = models.JSONField(default=list, blank=True)  # List of CVE names
     scan_id = models.CharField(max_length=40, primary_key=True, blank=True)  # Unique scan ID
-
+    status = models.CharField(max_length=20, default='Running')  # Scan status
     def __str__(self):
         return f"Scan {self.id} for Task {self.task.task_name}"
 
@@ -113,7 +113,7 @@ class SecurityAlert(models.Model):
     notified = models.BooleanField(default=False)  # Notification status
     notification_sent_at = models.DateTimeField(null=True, blank=True)  # Time of notification
     notification_channel = models.CharField(max_length=50, default='Telegram')  # Notification channel
-    owner = models.CharField(max_length=100, default='Viettel Cloud Security Team')  # Owner of the alert
+    owner = models.CharField(max_length=100, default='Cloud Security Team')  # Owner of the alert
     original_threat = models.CharField(max_length=50, null=True, blank=True)  # Original threat type
     original_severity = models.CharField(max_length=50, null=True, blank=True)  # Original severity
     modification_time = models.DateTimeField(null=True, blank=True)  # Last modification time

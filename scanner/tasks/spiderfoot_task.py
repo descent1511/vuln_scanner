@@ -5,7 +5,8 @@ import os
 import requests  # Import requests for making HTTP requests
 from ..services.translator import translate  # Import translation service (not used in this code)
 import time
-
+from django.core.exceptions import ObjectDoesNotExist
+from scanner.models import Crawler
 # Define a shared Celery task to wait for the SpiderFoot crawler to complete
 @shared_task
 def wait_for_crawler_complete(scan_id):
@@ -35,10 +36,19 @@ def wait_for_crawler_complete(scan_id):
                 }
                 
                 try:
-                    # Update the backend with the scan's completion status
-                    response = requests.patch(f"http://{backend_ip}:{backend_port}/crawlers/{scan_id}/", json=update_data)
-                    response.raise_for_status()
-                except requests.RequestException as e:
+                    # Lấy bản ghi Crawler tương ứng với scan_id
+                    crawler = Crawler.objects.get(id=scan_id)
+                    
+                    # Cập nhật các trường trong crawler với dữ liệu từ update_data
+                    for key, value in update_data.items():
+                        setattr(crawler, key, value)  # Cập nhật giá trị cho từng trường
+                    
+                    # Lưu các thay đổi vào cơ sở dữ liệu
+                    crawler.save()
+                    
+                except ObjectDoesNotExist:
+                    raise RuntimeError(f"Crawler with ID {scan_id} does not exist")
+                except Exception as e:
                     raise RuntimeError(f"Failed to update Crawler status: {e}")
 
                 break  # Exit the loop as the scan is complete
@@ -61,9 +71,15 @@ def wait_for_crawler_complete(scan_id):
         try:
             if num_threats > 0:
                 # Retrieve crawler information from the backend
-                response = requests.get(f"http://{backend_ip}:{backend_port}/crawlers/{scan_id}/")
-                response.raise_for_status()  
-                crawler = response.json()
+                try:
+                    # Lấy bản ghi Crawler tương ứng với scan_id
+                    crawler = Crawler.objects.get(crawler_id=scan_id)
+                    
+                except ObjectDoesNotExist:
+                    raise RuntimeError(f"Crawler with ID {scan_id} does not exist")
+                except Exception as e:
+                    raise RuntimeError(f"Failed to update Crawler status: {e}")
+                
                 
                 # If the target value type is valid, initiate an OpenVAS scan
                 if crawler['target']['value_type'] in ["domain_name", "ip_address", "hostname"]:
@@ -78,11 +94,17 @@ def wait_for_crawler_complete(scan_id):
         # Update the number of threats collected in the backend
         update_data['num_threats_collected'] = num_threats
         try:
-            response = requests.patch(f"http://{backend_ip}:{backend_port}/crawlers/{scan_id}/", json=update_data)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise RuntimeError(f"Failed to update Crawler with threats: {e}")
+            crawler = Crawler.objects.get(crawler_id=scan_id)
 
+            for key, value in update_data.items():
+                setattr(crawler, key, value)  
+                
+            crawler.save()
+                    
+        except ObjectDoesNotExist:
+            raise RuntimeError(f"Crawler with ID {scan_id} does not exist")
+        except Exception as e:
+            raise RuntimeError(f"Failed to update Crawler status: {e}")
         # Store correlation data in the backend
         for correlation in correlations:
             correlation_data = {
@@ -124,10 +146,10 @@ def wait_for_crawler_complete(scan_id):
                     message = (
                         f"🛡️ **Thông báo từ SpiderFoot**\n\n"
                         f"**ID:** `{correlation_id}`\n\n"
-                        f"**Tiêu đề:** *{headline}*\n\n"
-                        f"**Mức độ:** `{severity}`\n\n"
+                        f"**Tiêu đề:** *{translate(headline)}*\n\n"
+                        f"**Mức độ:** `{translate(severity)}`\n\n"
                         f"**Mô tả:**\n"
-                        f"> {description}\n\n"
+                        f"> {translate(description)}\n\n"
                         f"---\n"
                     )
                 else:

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Target, PortList, ScanConfig,Task, Crawler,TelegramUser,TargetSchedule,ScanHistory
+from datetime import timedelta
 
 from rest_framework import serializers
 from .models import Vulnerability, SecurityAlert,Correlation
@@ -57,7 +58,20 @@ class CrawlerSerializer(serializers.ModelSerializer):
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['target'] = TargetSerializer(instance.target).data
+        representation['task'] = TaskSerializer(instance.task).data
+        
+        if instance.start_time:
+            start_time_vn = instance.start_time + timedelta(hours=7)
+            representation['start_time'] = start_time_vn.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            representation['start_time'] = None
+
+        if instance.end_time:
+            end_time_vn = instance.end_time + timedelta(hours=7)
+            representation['end_time'] = end_time_vn.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            representation['end_time'] = None
+        
         return representation
 
 class TelegramUserSerializer(serializers.ModelSerializer):
@@ -84,4 +98,17 @@ class ScanHistorySerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['task'] = TaskSerializer(instance.task).data
+        
+        if instance.start_time:
+            start_time_vn = instance.start_time + timedelta(hours=7)
+            representation['start_time'] = start_time_vn.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            representation['start_time'] = None
+
+        if instance.end_time:
+            end_time_vn = instance.end_time + timedelta(hours=7)
+            representation['end_time'] = end_time_vn.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            representation['end_time'] = None
+        
         return representation

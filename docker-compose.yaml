@@ -10,7 +10,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
-
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistent volume for PostgreSQL
 
   redis:
     image: redis:latest
@@ -19,7 +20,7 @@ services:
       - "6380:6379"
 
   backend:
-    image: descent1511/vdt2_backend:v1
+    image: descent1511/vdt2_backend:v2
     container_name: vdt2_backend
     environment:
       OPENVAS_HOST: ${OPENVAS_HOST}
@@ -43,7 +44,7 @@ services:
       - postgres
       - redis
     ports:
-      - "4000:4000" 
+      - "4000:4000"
 
   bot:
     image: descent1511/vdt2_bot:v1
@@ -51,11 +52,12 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       BACKEND_IP: backend
+      BACKEND_PORT: 4000
     depends_on:
       - backend
 
   celery:
-    image: descent1511/vdt2_backend:v1
+    image: descent1511/vdt2_backend:v2
     container_name: celery_worker
     command: celery -A vuln_scanner worker --loglevel=info
     environment:
@@ -80,7 +82,7 @@ services:
       - redis
 
   celery-beat:
-    image: descent1511/vdt2_backend:v1
+    image: descent1511/vdt2_backend:v2
     container_name: celery_beat
     command: celery -A vuln_scanner beat --loglevel=info
     environment:
@@ -103,3 +105,9 @@ services:
     depends_on:
       - backend
       - redis
+
+volumes:
+  postgres_data:  # Named volume for PostgreSQL persistence
+
+
+

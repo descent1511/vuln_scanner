@@ -10,9 +10,10 @@ from .views import (
     CorrelationsViewSet,
     TelegramUserViewSet,
     ScheduleTargetViewSet,
-    ScanHistoryViewSet
+    ScanHistoryViewSet,
+    TokenVerifyView
 )
-from .views import threat_intelligence_view
+from .views import threat_intelligence_view,login_view,signup_view # Import the views for the threat intelligence and login pages
 
 # Initialize the Telegram bot instance (commented out here)
 # bot = TelegramBot()
@@ -34,6 +35,9 @@ router.register(r'scan-history', ScanHistoryViewSet)  # Register the ScanHistory
 # Define URL patterns
 urlpatterns = [
     path('threat-intelligence/', threat_intelligence_view, name='threat_intelligence'),  # URL path for the threat intelligence view
+    path('login/', login_view, name='login'),  # URL path for the login view
+    path('signup/', signup_view, name='signup'),  # URL path for the signup view
+    path('auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     # Additional URL paths (commented out as they are not active currently)
     # path('routes/<int:route_id>/drivers/', DriversOnRouteView.as_view(), name='drivers-on-route'),
     # path('routes/search/', BusScheduleView.as_view(), name='bus-schedule'),
