@@ -1,3 +1,4 @@
+
 # Security Scanner Black-Box for Cloud
 
 ## 1. Giới thiệu
@@ -56,9 +57,3 @@
 - **OpenVAS documentation:** [link]
 - **Telegram Bot API:** [link]
 - **Threat Intelligence sources:** Các nguồn được sử dụng trong việc thu thập thông tin.
-
-
-<!-- task_id=b371f93d-ee92-496f-90cc-93d40c30d000
-
-gvm-cli --gmp-username admin --gmp-password 605d266a-3420-400d-9047-07d3fa9173a7 socket --xml \\
-   "<delete_task task_id='b371f93d-ee92-496f-90cc-93d40c30d000'/>" -->
