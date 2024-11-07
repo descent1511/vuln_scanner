@@ -58,7 +58,7 @@ class CrawlerSerializer(serializers.ModelSerializer):
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['task'] = TaskSerializer(instance.task).data
+        
         
         if instance.start_time:
             start_time_vn = instance.start_time + timedelta(hours=7)
